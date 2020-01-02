@@ -52,37 +52,34 @@ export default {
     }
   },
   mounted(){
-    
     this.$d3.json("/miserables.json").then((graph)=>{
       this.config.nodes = graph.nodes;
       this.config.links = graph.links;
       this.init();
-    //   this.simulation.nodes(graph.nodes).on("tick", ()=>{
-    //     this.ticked(link,node)
-    //   });
-      
-    //   this.simulation.force("link").links(graph.links);
     });
   },
   methods:{
-    init(){
+    initForce(){
       let _this = this;
       let _parentNode = this.$refs.relationMap;
       this.simulation = this.$d3.forceSimulation(this.config.nodes)
       // simulation.force(name,[force])函数，添加某种力
-          .force("link", this.$d3.forceLink(this.config.links))
+          .force("link", this.$d3.forceLink(this.config.links).id(d => {return d.id}))
           // 万有引力
           .force("charge", this.$d3.forceManyBody().strength(this.config.chargeStrength))
           // this.$d3.forceCenter()用指定的x坐标和y坐标创建一个新的居中力。
-          .force("center", this.$d3.forceCenter(_parentNode.offsetWidth, _parentNode.offsetHeight))
+          .force("center", this.$d3.forceCenter(_parentNode.offsetWidth/2, _parentNode.offsetHeight/2))
           // 碰撞作用力，为节点指定一个radius区域来防止节点重叠，设置碰撞力的强度，范围[0,1], 默认为0.7。设置迭代次数，默认为1，迭代次数越多最终的布局效果越好，但是计算复杂度更高
           .force("collide", this.$d3.forceCollide(this.config.collide).strength(0.2).iterations(5))
           // 在计时器的每一帧中，仿真的alpha系数会不断削减,当alpha到达一个系数时，仿真将会停止，也就是alpha的目标系数alphaTarget，该值区间为[0,1]. 默认为0，
           // 控制力学模拟衰减率，[0-1] ,设为0则不停止 ， 默认0.0228，直到0.001
           .alphaDecay(this.config.alphaDecay)
           // 监听事件 ，tick|end ，例如监听 tick 滴答事件
-          // .on("tick", ()=>this.ticked());
-
+          .on("tick", ()=>this.ticked());
+    },
+    init(){
+      let _this = this;
+      let _parentNode = this.$refs.relationMap;
       // 2.创建svg标签
       this.SVG = this.$d3.select("#relationMap").append("svg")
           .attr("class", "svgclass")
@@ -119,8 +116,6 @@ export default {
           .append("pattern")
           .attr("class", "patternclass")
           .attr("id", function (d, index) {
-            console.log("d",d,index);
-            
             return 'avatar' + d.id;
           })
           // 两个取值userSpaceOnUse  objectBoundingBox
@@ -164,56 +159,61 @@ export default {
       // 5.关系图添加线
       // 5.1  每条线是个容器，有线 和一个装文字的容器
       this.edges = this.relMap_g
-      .selectAll("g.edge")
-      .data(this.config.links)
-      .enter()
-      .append("g")
-      .attr("class","edge")
-      .on('mouseover', function () {
-          _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 4);
-      })
-      .on('mouseout', function () {
-          _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 1);
-      }).on('click',(d)=>{
+        .selectAll("g.edge")
+        .data(this.config.links)
+        .enter()
+        .append("g")
+        .attr("class","edge")
+        .on('mouseover', function () {
+            _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 4);
+        })
+        .on('mouseout', function () {
+            _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 1);
+        }).on('click',(d)=>{
 
-      }).attr('fill', function (d) {
-          var str = '#bad4ed';
-          if (d.color) {
-              str = "#" + d.color;
-          }
-          return str;
-      })   
+        }).attr('fill', function (d) {
+            var str = '#bad4ed';
+            if (d.color) {
+                str = "#" + d.color;
+            }
+            return str;
+        })   
       // 5.2 添加线
       this.links=this.edges.append("path").attr("class","links")
-      .attr("d", d=> {return "M" + _this.R + "," + 0 + " L" + _this.getDis(d.source, d.target) + ",0";})
-      .style("marker-end", "url(#marker)")
-      // .attr("refX",this.config.r)
-      .attr('stroke', (d)=> {
-          var str=d.color ? "#"+d.color : this.config.linkColor ;
-          return str;
-      });
+        .attr("d", d => {
+          console.log("path",d,`M${this.config.linkSrc},0L${d.source&&d.target},0`);
+          
+            return `M${this.config.linkSrc},0L${this.getDis(d.source,d.target)},0`
+            // return "M" + this.config.linkSrc + "," + '0' + " L" + this.getDis(d.source, d.target) ? this.getDis(d.source, d.target): "5"  + ",0";
+        })
+        .style("marker-end", "url(#marker)")
+        // .attr("refX",this.config.r)
+        .attr('stroke', (d)=> {
+            var str=d.color ? "#"+d.color : this.config.linkColor ;
+            return str;
+        });
 
       // 5.3 添加关系文字的容器
       this.rect_g=this.edges.append("g").attr("class", "rect_g");
 
-    // 5.4 添加rect
+      // 5.4 添加rect
       this.rects =this.rect_g.append("rect")
-      .attr("x", 40)
-      .attr("y", -10)
-      .attr("width", 40)
-      .attr("height", 20)
-      .attr("fill", "white")
-      .attr('stroke',  (d)=> {
-          var str=d.color ? "#"+d.color : this.config.linkColor ;
-          return str;
-      })
+        .attr("x", 40)
+        .attr("y", -10)
+        .attr("width", 40)
+        .attr("height", 20)
+        .attr("fill", "white")
+        .attr('stroke',  (d)=> {
+            var str=d.color ? "#"+d.color : this.config.linkColor ;
+            return str;
+        })
 
       // 5.5 文本标签  坐标（x,y）代表 文本的左下角的点
       this.texts = this.rect_g.append("text")
-      .attr("x", 40)
-      .attr("y", 5)
-      .attr("text-anchor", "middle")  // <text>文本中轴对齐方式居中  start | middle | end
-      .style("font-size",12).text(d=>{return d.type}); 
+        .attr("x", 40)
+        .attr("y", 5)
+        .attr("text-anchor", "middle")  // <text>文本中轴对齐方式居中  start | middle | end
+        .style("font-size",12).text(d=>{return d.relation}); 
       
       // 6.关系图添加用于显示头像的节点
       this.circles =  this.relMap_g.selectAll("circle.circleclass")
@@ -229,8 +229,6 @@ export default {
           //     return d.y;
           // })
           .attr("fill", function (d) {
-            console.log("ddd",d);
-            
               return ("url(#avatar" + d.id + ")");
           })
           .attr("stroke", "#ccf1fc")
@@ -378,6 +376,8 @@ export default {
               d.fy = null;
           }));    
       
+
+      this.initForce();
     },
     // 7.动态改变 线和节点的 位置
     // tick心跳函数    
@@ -385,31 +385,38 @@ export default {
         let _this = this;
         // 7.1 修改每条容器edge的位置
         this.edges.attr("transform", function (d) {
-            return getTransform(d.source, d.target, _this.getDis(d.source, d.target))
+            return _this.getTransform(d.source, d.target, _this.getDis(d.source, d.target))
         });
 
         // 7.2 修改每条线link位置
-        this.links.attr("d", d=> {return "M" + this.R + "," + 0 + " L" + _this.getDis(d.source, d.target) + ",0";})
+        this.links.attr("d", d => {
+            return "M" + this.config.linkSrc + "," + 0 + " L" + this.getDis(d.source, d.target) + ",0";
+        })
     
         // 7.3 修改线中关系文字text的位置 及 文字的反正
-        this.texts.attr("x", function(d){
-            // 7.3.1 根据字的长度来更新兄弟元素 rect 的宽度
-            var bbox= this.$d3.select(this).node().getBBox();
-            var width = bbox.width;
-            $(this).prev('rect').attr('width',width+10);   
-            // 7.3.2 更新 text 的位置
-            return _this.getDis(d.source, d.target) / 2}).attr("transform", function (d) {
-            // 7.3.3 更新文本反正
-            if (d.target.x < d.source.x) {
-                var x = _this.getDis(d.source, d.target) / 2;
-                return 'rotate(180 ' + x + ' ' + 0 + ')';
-            } else {
-                return 'rotate(0)';
-            }
-        });
+        this.texts.attr("x", function (d) {
+                // 7.3.1 根据字的长度来更新兄弟元素 rect 的宽度
+                var bbox = _this.$d3.select(this).node().getBBox();
+                var width = bbox.width;
+                // ########################
+                // $(this).prev('rect').attr('width', width + 10);
+                // this.$d3.select(this).prev('rect').attr('width', width + 10);
+                // 7.3.2 更新 text 的位置
+                return _this.getDis(d.source, d.target) / 2
+            }).attr("transform", function (d) {
+                // 7.3.3 更新文本反正
+                if (d.target.x < d.source.x) {
+                    var x = _this.getDis(d.source, d.target) / 2;
+                    return 'rotate(180 ' + x + ' ' + 0 + ')';
+                } else {
+                    return 'rotate(0)';
+                }
+            });
 
         // 7.4 修改线中装文本矩形rect的位置
-        this.rects.attr("x", function(d){return _this.getDis(d.source, d.target) / 2  - _this.d3.select(this).attr('width')/2})    // x 坐标为两点中心距离减去自身长度一半
+        this.rects.attr("x", function(d){
+          return _this.getDis(d.source, d.target) / 2  - _this.$d3.select(this).attr('width')/2
+        })    // x 坐标为两点中心距离减去自身长度一半
 
         // 5.修改节点的位置
         this.circles
@@ -498,7 +505,11 @@ export default {
         });
     },   
     getDis(s, t){// 求两点间的距离
-      return Math.sqrt((s.x - t.x) * (s.x - t.x) + (s.y - t.y) * (s.y - t.y));
+      if( typeof(s)=="object"&&typeof(t)=='object' ){
+        return Math.sqrt((s.x - t.x) * (s.x - t.x) + (s.y - t.y) * (s.y - t.y));
+      }else{
+        return 0;
+      }
     },
     /**
      * d3 拖拽事件drag event 参数

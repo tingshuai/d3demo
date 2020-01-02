@@ -269,267 +269,33 @@
   ],
   "links": [
       {
-          "source": 0,
-          "target": 1,
+          "source": 41,
+          "target": 42,
           "relation": "\u670b\u53cb",
           "color": "734646"
       },
       {
-          "source": 0,
-          "target": 2,
+          "source": 41,
+          "target": 43,
           "relation": "\u670b\u53cb",
           "color": "734646"
       },
       {
-          "source": 0,
-          "target": 3,
+          "source": 41,
+          "target": 44,
           "relation": "\u517b\u5973",
           "color": "f2826a"
       },
       {
-          "source": 0,
-          "target": 4,
+          "source": 41,
+          "target": 45,
           "relation": "\u4e3b\u4ec6",
           "color": ""
       },
       {
-          "source": 0,
-          "target": 5,
+          "source": 41,
+          "target": 46,
           "relation": "\u4ec7\u4eba",
-          "color": ""
-      },
-      {
-          "source": 0,
-          "target": 6,
-          "relation": "\u513f\u5ab3",
-          "color": "e3dce3"
-      },
-      {
-          "source": 0,
-          "target": 7,
-          "relation": "\u59d0\u59b9",
-          "color": ""
-      },
-      {
-          "source": 0,
-          "target": 8,
-          "relation": "\u5ac2\u5b50",
-          "color": ""
-      },
-      {
-          "source": 1,
-          "target": 9,
-          "relation": "\u5b59\u5b50",
-          "color": "6681ae"
-      },
-      {
-          "source": 1,
-          "target": 10,
-          "relation": "\u6bcd\u5b50",
-          "color": ""
-      },
-      {
-          "source": 1,
-          "target": 5,
-          "relation": "\u513f\u5b50",
-          "color": "f2826a"
-      },
-      {
-          "source": 1,
-          "target": 11,
-          "relation": "\u5144\u5f1f",
-          "color": ""
-      },
-      {
-          "source": 1,
-          "target": 2,
-          "relation": "\u5408\u4f5c",
-          "color": ""
-      },
-      {
-          "source": 1,
-          "target": 3,
-          "relation": "\u5e2e\u52a9",
-          "color": ""
-      },
-      {
-          "source": 1,
-          "target": 4,
-          "relation": "\u4ec7\u4eba",
-          "color": ""
-      },
-      {
-          "source": 1,
-          "target": 7,
-          "relation": "\u60c5\u4eba",
-          "color": "fcb7e9"
-      },
-      {
-          "source": 4,
-          "target": 11,
-          "relation": "\u7ade\u4e89",
-          "color": ""
-      },
-      {
-          "source": 4,
-          "target": 5,
-          "relation": "\u7ade\u4e89",
-          "color": ""
-      },
-      {
-          "source": 4,
-          "target": 6,
-          "relation": "\u513f\u5b50",
-          "color": "f2826a"
-      },
-      {
-          "source": 4,
-          "target": 8,
-          "relation": "\u5144\u59b9",
-          "color": ""
-      },
-      {
-          "source": 4,
-          "target": 12,
-          "relation": "\u5802\u5144\u5f1f",
-          "color": ""
-      },
-      {
-          "source": 4,
-          "target": 2,
-          "relation": "\u6c11\u4e0e\u5b98",
-          "color": ""
-      },
-      {
-          "source": 4,
-          "target": 13,
-          "relation": "\u9752\u6885\u7af9\u9a6c",
-          "color": ""
-      },
-      {
-          "source": 4,
-          "target": 14,
-          "relation": "\u88ab\u5e2e\u52a9",
-          "color": ""
-      },
-      {
-          "source": 2,
-          "target": 15,
-          "relation": "\u540c\u7a97",
-          "color": ""
-      },
-      {
-          "source": 2,
-          "target": 14,
-          "relation": "\u5408\u4f5c",
-          "color": ""
-      },
-      {
-          "source": 13,
-          "target": 0,
-          "relation": "\u4ec7\u4eba\u80e1\u548f\u6885\u6b7b\u4ea1",
-          "color": ""
-      },
-      {
-          "source": 13,
-          "target": 14,
-          "relation": "\u6c42\u52a9",
-          "color": ""
-      },
-      {
-          "source": 13,
-          "target": 6,
-          "relation": "\u6c42\u52a9",
-          "color": ""
-      },
-      {
-          "source": 14,
-          "target": 5,
-          "relation": "\u5229\u7528",
-          "color": ""
-      },
-      {
-          "source": 14,
-          "target": 16,
-          "relation": "\u4e3b\u4ec6",
-          "color": ""
-      },
-      {
-          "source": 14,
-          "target": 0,
-          "relation": "\u4ec7\u4eba",
-          "color": ""
-      },
-      {
-          "source": 14,
-          "target": 1,
-          "relation": "\u4ec7\u4eba",
-          "color": ""
-      },
-      {
-          "source": 14,
-          "target": 6,
-          "relation": "\u8ba4\u8bc6",
-          "color": ""
-      },
-      {
-          "source": 14,
-          "target": 11,
-          "relation": "\u5229\u7528",
-          "color": ""
-      },
-      {
-          "source": 8,
-          "target": 2,
-          "relation": "\u592b\u59bb",
-          "color": "fcb7e9"
-      },
-      {
-          "source": 8,
-          "target": 7,
-          "relation": "\u4e92\u770b\u4e0d\u60ef",
-          "color": ""
-      },
-      {
-          "source": 8,
-          "target": 15,
-          "relation": "\u5144\u59b9",
-          "color": ""
-      },
-      {
-          "source": 17,
-          "target": 0,
-          "relation": "\u5408\u4f5c",
-          "color": ""
-      },
-      {
-          "source": 17,
-          "target": 1,
-          "relation": "\u7edd\u4ea4",
-          "color": ""
-      },
-      {
-          "source": 15,
-          "target": 0,
-          "relation": "\u5ac2\u5b50",
-          "color": ""
-      },
-      {
-          "source": 18,
-          "target": 0,
-          "relation": "\u4ec6\u4eba",
-          "color": ""
-      },
-      {
-          "source": 12,
-          "target": 14,
-          "relation": "\u88ab\u5e2e\u52a9",
-          "color": ""
-      },
-      {
-          "source": 10,
-          "target": 9,
-          "relation": "\u5a46\u5ab3",
           "color": ""
       }
   ]

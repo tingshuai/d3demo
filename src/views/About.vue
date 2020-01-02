@@ -1,5 +1,5 @@
 <template>
-  <div class="home">
+  <div class="home" ref="relationMap">
     <svg id="svg" width="960" height="600"></svg>
   </div>
 </template>
@@ -20,6 +20,9 @@ export default {
         height: 610,
         nodes: [],
         links: [],
+        graph:null,
+        link:null,
+        node:null,
         isHighLight: false ,    //是否启动 鼠标 hover 到节点上高亮与节点有关的节点，其他无关节点透明的功能
         isScale: true,      //是否启用缩放平移zoom功能
         scaleExtent: [0.5, 1.5],  //缩放的比例尺
@@ -41,51 +44,57 @@ export default {
     var svg = this.$d3.select("svg"),
     width = +svg.attr("width"),
     height = +svg.attr("height");
+    let _this = this;
+    debugger
     console.log('d3',this.$d3);
-    this.simulation = d3.forceSimulation(this.config.nodes)
-    // simulation.force(name,[force])函数，添加某种力
-        .force("link", d3.forceLink(this.config.links))
-        // 万有引力
-        .force("charge", d3.forceManyBody().strength(this.config.chargeStrength))
-        // d3.forceCenter()用指定的x坐标和y坐标创建一个新的居中力。
-        .force("center", d3.forceCenter(this.config.width / 2, this.config.height / 2))
-        // 碰撞作用力，为节点指定一个radius区域来防止节点重叠，设置碰撞力的强度，范围[0,1], 默认为0.7。设置迭代次数，默认为1，迭代次数越多最终的布局效果越好，但是计算复杂度更高
-        .force("collide", d3.forceCollide(this.config.collide).strength(0.2).iterations(5))
-        // 在计时器的每一帧中，仿真的alpha系数会不断削减,当alpha到达一个系数时，仿真将会停止，也就是alpha的目标系数alphaTarget，该值区间为[0,1]. 默认为0，
-        // 控制力学模拟衰减率，[0-1] ,设为0则不停止 ， 默认0.0228，直到0.001
-        .alphaDecay(this.config.alphaDecay)
-        // 监听事件 ，tick|end ，例如监听 tick 滴答事件
-        .on("tick", ()=>this.ticked());    
-    this.simulation = this.$d3.forceSimulation()
-        .force("link", this.$d3.forceLink().id((d)=> { return d.id; }))
-        .force("charge", this.$d3.forceManyBody())
-        .force("center", this.$d3.forceCenter(width / 2, height / 2));
-    this.$d3.json("/miserables.json").then((graph)=>{
-      var link = svg.append("g")
+    // this.simulation = this.$d3.forceSimulation()
+    //     .force("link", this.$d3.forceLink().id((d)=> { return d.id; }))
+    //     .force("charge", this.$d3.forceManyBody())
+    //     .force("center", this.$d3.forceCenter(width / 2, height / 2));
+    this.$d3.json("/data.json").then((graph)=>{
+      this.graph = graph;
+      this.link = svg.append("g")
         .attr("class", "links")
         .selectAll("line")
         .data(graph.links)
         .enter().append("line");
       
-      var node = svg.append("g")
+      this.node = svg.append("g")
         .attr("class", "nodes")
         .selectAll("circle")
         .data(graph.nodes)
         .enter().append("circle")
         .attr("r", 12.5)
-        .call(this.$d3.drag()
-              .on("start", (d)=>{this.dragstarted(d)})
-              .on("drag", (d)=>{this.dragged(d)})
-              .on("end", (d)=>{this.dragended(d)}));
-      
-      this.simulation.nodes(graph.nodes).on("tick", ()=>{
-        this.ticked(link,node)
-      });
-      
-      this.simulation.force("link").links(graph.links);
+        .call(_this.$d3.drag()
+              .on("start", (d)=>{_this.dragstarted(d)})
+              .on("drag", (d)=>{_this.dragged(d)})
+              .on("end", (d)=>{_this.dragended(d)}));
+      this.initForce();
     });
   },
   methods:{
+    initForce(){
+      let _parentNode = this.$refs.relationMap;
+
+      this.simulation = this.$d3.forceSimulation()
+      // simulation.force(name,[force])函数，添加某种力
+          .force("link", this.$d3.forceLink().id(d => {return d.id}))
+          // 万有引力
+          .force("charge", this.$d3.forceManyBody().strength(this.config.chargeStrength))
+          // this.$d3.forceCenter()用指定的x坐标和y坐标创建一个新的居中力。
+          .force("center", this.$d3.forceCenter(_parentNode.offsetWidth/2, _parentNode.offsetHeight/2))
+          // 碰撞作用力，为节点指定一个radius区域来防止节点重叠，设置碰撞力的强度，范围[0,1], 默认为0.7。设置迭代次数，默认为1，迭代次数越多最终的布局效果越好，但是计算复杂度更高
+          .force("collide", this.$d3.forceCollide(this.config.collide).strength(0.2).iterations(5))
+          // 在计时器的每一帧中，仿真的alpha系数会不断削减,当alpha到达一个系数时，仿真将会停止，也就是alpha的目标系数alphaTarget，该值区间为[0,1]. 默认为0，
+          // 控制力学模拟衰减率，[0-1] ,设为0则不停止 ， 默认0.0228，直到0.001
+          .alphaDecay(this.config.alphaDecay)
+          // 监听事件 ，tick|end ，例如监听 tick 滴答事件        
+      this.simulation.nodes(this.graph.nodes).on("tick", ()=>{
+        this.ticked(this.link,this.node)
+      });
+      
+      this.simulation.force("link").links(this.graph.links);
+    },
     ticked(link,node){
         link
             .attr("x1", function(d) { return d.source.x; })
