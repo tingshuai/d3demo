@@ -25,16 +25,15 @@ export default {
       links:null,
       circles:null,
       patterns:null,
-      highlighted:null,
-      dependsNode:[],
-      dependsLinkAndText:[],
+      dependsNode:[],// 需要高亮的node
+      dependsLinkAndText:[],// 需要高亮的link
       R:30,//画线时候的影响弧度
       config:{
         width: 375, // 总画布svg的宽
         height: 610,
         nodes: [],
         links: [],
-        isHighLight: false ,    //是否启动 鼠标 hover 到节点上高亮与节点有关的节点，其他无关节点透明的功能
+        isHighLight: true ,    //是否启动 鼠标 hover 到节点上高亮与节点有关的节点，其他无关节点透明的功能
         isScale: true,      //是否启用缩放平移zoom功能
         scaleExtent: [0.5, 1.5],  //缩放的比例尺
         chargeStrength:-300,    //万有引力
@@ -64,7 +63,7 @@ export default {
       let _parentNode = this.$refs.relationMap;
       this.simulation = this.$d3.forceSimulation(this.config.nodes)
       // simulation.force(name,[force])函数，添加某种力
-          .force("link", this.$d3.forceLink(this.config.links).id(d => {return d.id}))
+          .force("link", this.$d3.forceLink(this.config.links).id(d => {return d.id}).distance(200))
           // 万有引力
           .force("charge", this.$d3.forceManyBody().strength(this.config.chargeStrength))
           // this.$d3.forceCenter()用指定的x坐标和y坐标创建一个新的居中力。
@@ -177,7 +176,7 @@ export default {
                 str = "#" + d.color;
             }
             return str;
-        })   
+        })
       // 5.2 添加线
       this.links=this.edges.append("path").attr("class","links")
         .attr("d", d => {
@@ -222,12 +221,6 @@ export default {
           .append("circle")
           .attr("class","circleclass")
           .style("cursor", "pointer")
-          // .attr("cx", function (d) {
-          //     return d.x;
-          // })
-          // .attr("cy", function (d) {
-          //     return d.y;
-          // })
           .attr("fill", function (d) {
               return ("url(#avatar" + d.id + ")");
           })
@@ -235,6 +228,7 @@ export default {
           .attr("stroke-width", this.config.strokeWidth)
           .attr("r", this.config.r)
           .on('mouseover', function(d){
+              _this.showTootip(this,d);
               _this.$d3.select(this).attr('stroke-width', '8');
               _this.$d3.select(this).attr('stroke', '#a3e5f9');
               if(_this.config.isHighLight){
@@ -242,6 +236,7 @@ export default {
               }
           })
           .on('mouseout', function(d){
+              _this.showTootip(this);
               _this.$d3.select(this).attr('stroke-width', _this.config.strokeWidth);
               _this.$d3.select(this).attr('stroke', '#c5dbf0');
               if(_this.config.isHighLight){
@@ -250,103 +245,12 @@ export default {
           })
           .on('click', function (d) {
 
-              // // 展示方式1 ：屏幕下方bar
-              // $('.no-more').removeClass('hide');
-              // if(timeout){
-              //     clearTimeout(timeout);
-              // }
-              // if(d.exdata){
-              //     $('.no-more').html(`<a class="external" data-no-cache="true" href="/person/${d.exdata.oid}">${d.exdata.name}</a>&nbsp; 饰 &nbsp;<a class="external" data-no-cache="true" href="${d.url}">${d.name}</a> `);
-              // }else {
-              //     $('.no-more').html(`<a href="${d.url}">${d.name}</a>`);
-              // }
-              // timeout=setTimeout(()=>$('.no-more').addClass('hide'),3000);
-
-              // 展示方式2 ：浮窗展示
-              event = _this.$d3.event || window.event;
-              var pageX = event.pageX ? event.pageX : (event.clientX + (document.body.scrollLeft || document.documentElement.scrollLeft));
-              var pageY = event.pageY ? event.pageY : (event.clientY + (document.body.scrollTop || document.documentElement.scrollTop));
-              // console.log('pagex',pageX);
-              // console.log('pageY',pageY);
-              //阻止事件冒泡  阻止事件默认行为
-              event.stopPropagation ? (event.stopPropagation()) :  (event.cancelBubble = true);
-              event.preventDefault ? (event.preventDefault()) : (event.returnValue = false);
-
-              var _html=`<a href="${d.url}" class="external linkname" data-no-cache="true">${d.name}</a>`;
-              if(d.exdata){
-                  _html+=`&nbsp;&nbsp;(<a class="external linkname" data-no-cache="true" href="${d.exdata.url}" >${d.exdata.name}</a> 饰)`;
-              }
-
-
-              _this.$d3.selectAll('.tooltip').remove();
-              var _div=_this.$d3.select('#relationMap').append('div')
-                      .attr('class','tooltip')
-                      .html(_html);
-
-              var _width=parseInt(_div.style('width'));
-              console.log('width',_width);
-
-              //判断浮窗的左上角坐标 ，如果太靠右侧/底部 边缘 ，浮窗位置平移
-              console.log('dw'+document.body.clientWidth);
-              if(document.body.clientWidth - pageX < _width){
-                  pageX=document.body.clientWidth - _width -5;
-              }
-              if(document.body.clientHeight - pageY < 50){
-                  pageY=document.body.clientHeight-50;
-              }
-
-              _div.style('top',pageY+'px')
-                  .style('left',pageX+'px');
-              
           })
           .on('mousedown', function (d) {     //监听鼠标落下
-              // console.log(event);
-              // console.log(window.event);
-              // event = event || window.event;
-              // var btnNum = event.button;
-              // if (btnNum == 2) {
-              //     console.log("您点击了鼠标右键！");
-              // }
-
-              // if (window.Event)
-              //     document.captureEvents(Event.MOUSEUP);
-              // var canClick=false;
-              // function nocontextmenu()
-              // {
-              //     if(canClick)return;
-              //     event.cancelBubble = true
-              //     event.returnValue = false;
-              //     canClick=true;
-              //     return false;
-              // }
-              // function norightclick(e)
-              // {
-              //     if (window.Event)
-              //     {
-              //         if (e.which == 2 || e.which == 3)
-              //             return false;
-              //     }
-              //     else if (event.button == 2 || event.button == 3)
-              //     {
-              //         event.cancelBubble = true;
-              //         event.returnValue = false;
-              //         return false;
-              //     }
-              // }
-              // document.oncontextmenu = nocontextmenu;  // for IE5+
-              // document.onmousedown = norightclick;  // for all others
+              
           })
           .on('contextmenu', function () {    //鼠标右键菜单
-              // event = event || window.event;
-              // event.cancelBubble = true;
-              // event.returnValue = false;
-              // var pageX = event.pageX ? event.pageX : (event.clientX + (document.body.scrollLeft || document.documentElement.scrollLeft));
-              // var pageY = event.pageY ? event.pageY : (event.clientY + (document.body.scrollTop || document.documentElement.scrollTop));
-              // $('#myContextMenu').css('left', pageX);
-              // $('#myContextMenu').css('top', pageY);
-              // $('#myContextMenu').css('visibility ', 'visible');
-              // $('#myContextMenu').show();
-              // return false;
+            
           })
           // 应用 自定义的 拖拽事件
           .call(this.$d3.drag()
@@ -361,7 +265,6 @@ export default {
               d.fy = d.y;
           })
           .on('drag', function (d) {
-    
               // d.fx属性- 节点的固定x位置
               // 在每次tick结束时，d.x被重置为d.fx ，并将节点 d.vx设置为零
               // 要取消节点，请将节点 .fx和节点 .fy设置为空，或删除这些属性。
@@ -369,15 +272,42 @@ export default {
               d.fy = _this.$d3.event.y;
           })
           .on('end', function (d) {
-    
               // 让alpha目标值值恢复为默认值0,停止力模型
               if (!_this.$d3.event.active) _this.simulation.alphaTarget(0);
               d.fx = null;
               d.fy = null;
           }));    
-      
-
       this.initForce();
+    },
+    showTootip(me,d=null){
+        // 展示方式2 ：浮窗展示
+        event = this.$d3.event || window.event;
+        if(!d){
+            this.$d3.selectAll('.tooltip').remove();
+            return;
+        }
+        var pageX = event.pageX ? event.pageX : (event.clientX + (document.body.scrollLeft || document.documentElement.scrollLeft));
+        var pageY = event.pageY ? event.pageY : (event.clientY + (document.body.scrollTop || document.documentElement.scrollTop));
+        //阻止事件冒泡  阻止事件默认行为
+        event.stopPropagation ? (event.stopPropagation()) :  (event.cancelBubble = true);
+        event.preventDefault ? (event.preventDefault()) : (event.returnValue = false);
+        var _html=`<a href="${d.url}" class="external linkname" data-no-cache="true">${d.name}</a>`;
+        if(d.exdata){
+            _html+=`&nbsp;&nbsp;(<a class="external linkname" data-no-cache="true" href="${d.exdata.url}" >${d.exdata.name}</a> 饰)`;
+        }
+        this.$d3.selectAll('.tooltip').remove();
+        var _div=this.$d3.select('#relationMap').append('div').attr('class','tooltip').html(_html);
+
+        var _width=parseInt(_div.style('width'));
+
+        //判断浮窗的左上角坐标 ，如果太靠右侧/底部 边缘 ，浮窗位置平移
+        if(document.body.clientWidth - pageX < _width){
+            pageX=document.body.clientWidth - _width -85;
+        }
+        if(document.body.clientHeight - pageY < 50){
+            pageY=document.body.clientHeight-70;
+        }
+        _div.style('top',pageY+'px').style('left',pageX+'px');
     },
     // 7.动态改变 线和节点的 位置
     // tick心跳函数    
@@ -448,23 +378,21 @@ export default {
             this.dependsNode = this.dependsNode.concat([objIndex]);
             this.dependsLinkAndText = this.dependsLinkAndText.concat([objIndex]);
             this.config.links.forEach(function (lkItem) {
-                if (objIndex == lkItem['source']['index']) {
-                    _this.dependsNode = _this.dependsNode.concat([lkItem.target.index]);
+              if (objIndex == lkItem['source']['index']) {
+                _this.dependsNode = _this.dependsNode.concat([lkItem.target.index]);
                 } else if (objIndex == lkItem['target']['index']) {
-                    _this.dependsNode = _this.dependsNode.concat([lkItem.source.index]);
+                  _this.dependsNode = _this.dependsNode.concat([lkItem.source.index]);
                 }
             });
-
             // 隐藏节点
             this.SVG.selectAll('circle').filter(function (d) {
-                return (this.dependsNode.indexOf(d.index) == -1);
+                return (_this.dependsNode.indexOf(d.index) == -1);
             }).transition().style('opacity', 0.1);
             // 隐藏线
             this.SVG.selectAll('.edge').filter(function (d) {
                 // return true;
                 return ((_this.dependsLinkAndText.indexOf(d.source.index) == -1) && (_this.dependsLinkAndText.indexOf(d.target.index) == -1))
             }).transition().style('opacity', 0.1);
-
         } else {
             // 取消高亮
             // 恢复隐藏的线
@@ -476,9 +404,8 @@ export default {
                 // return true;
                 return ((_this.dependsLinkAndText.indexOf(d.source.index) == -1) && (_this.dependsLinkAndText.indexOf(d.target.index) == -1))
             }).transition().style('opacity', 1);
-            this.highlighted = null,
-                this.dependsNode = [],
-                this.dependsLinkAndText = [];
+            this.dependsNode = [],
+            this.dependsLinkAndText = [];
         }
     },
     /**
@@ -587,9 +514,14 @@ export default {
   height: 100%;
   display: flex;
   flex: 1;
+  margin-left: 100px;
+  /deep/.tooltip{
+    position: absolute;
+    z-index: 10;
+  }
 }
 #svg{
-
+  z-index: 9;
   /deep/.links line {
     stroke: #aaa;
   }
