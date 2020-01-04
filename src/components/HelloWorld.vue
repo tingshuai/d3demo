@@ -103,26 +103,30 @@ export default {
             
         // 3.defs  <defs>标签的内容不会显示，只有调用的时候才显示
         this.defs=this.SVG.append('defs');
+        // 3.1 添加箭头
+        this.marker=this.defs
+            .append("marker")
+            .attr('id', "marker")
+            .attr("markerWidth", 10)    //marker视窗的宽
+            .attr("markerHeight", 10)   //marker视窗的高
+            .attr("refX", this.config.r + 3*this.config.strokeWidth)            //refX和refY，指的是图形元素和marker连接的位置坐标
+            .attr("refY", 4)
+            .attr("orient", "auto")     //orient="auto"设置箭头的方向为自动适应线条的方向
+            .attr("markerUnits", "userSpaceOnUse")  //marker是否进行缩放 ,默认值是strokeWidth,会缩放
+            .append("path")
+            .attr("d", "M 0 0 8 4 0 8Z")    //箭头的路径 从 （0,0） 到 （8,4） 到（0,8）
+            .attr("fill", "steelblue");
+        // 4.放关系图的容器
+        this.relMap_g = this.SVG.append("g")
+            .attr("class", "relMap_g")
+            .attr("width", _parentNode.offsetWidth)
+            .attr("height", _parentNode.offsetHeight);              
       }
-      // 3.1 添加箭头
-      this.marker=this.defs
-          .append("marker")
-          .attr('id', "marker")
-          .attr("markerWidth", 10)    //marker视窗的宽
-          .attr("markerHeight", 10)   //marker视窗的高
-          .attr("refX", this.config.r + 3*this.config.strokeWidth)            //refX和refY，指的是图形元素和marker连接的位置坐标
-          .attr("refY", 4)
-          .attr("orient", "auto")     //orient="auto"设置箭头的方向为自动适应线条的方向
-          .attr("markerUnits", "userSpaceOnUse")  //marker是否进行缩放 ,默认值是strokeWidth,会缩放
-          .append("path")
-          .attr("d", "M 0 0 8 4 0 8Z")    //箭头的路径 从 （0,0） 到 （8,4） 到（0,8）
-          .attr("fill", "steelblue");
 
       // 3.2 添加多个头像图片的 <pattern>
-      this.patterns = this.defs
-          .selectAll("pattern.patternclass")
-          .data(this.config.nodes)
-          .enter()
+      this.patterns = this.defs.selectAll("pattern.patternclass").data(this.config.nodes);
+      this.patterns.exit().remove();
+      this.patterns = this.patterns.enter()
           .append("pattern")
           .attr("class", "patternclass")
           .attr("id", function (d, index) {
@@ -134,7 +138,7 @@ export default {
           .attr("x", "0")
           .attr("y", "0")
           .attr("width", "1")
-          .attr("height", "1");
+          .attr("height", "1")
 
       // 3.3 向<defs> - <pattern>添加 头像
       this.patterns.append("image")
@@ -158,19 +162,13 @@ export default {
           .style("font-size", this.config.r/3)
           .text(function (d) {
               return d.name;
-          });  
-          
-      // 4.放关系图的容器
-      this.relMap_g = this.SVG.append("g")
-          .attr("class", "relMap_g")
-          .attr("width", _parentNode.offsetWidth)
-          .attr("height", _parentNode.offsetHeight);   
+          }).merge(this.patterns); 
           
       // 5.关系图添加线
+      this.edges = this.relMap_g.selectAll("g.edge").data(this.config.links);
+      // this.edges.exit().transition().style("opacity", 0).remove();
       // 5.1  每条线是个容器，有线 和一个装文字的容器
-      this.edges = this.relMap_g
-        .selectAll("g.edge")
-        .data(this.config.links)
+      this.edges = this.edges
         .enter()
         .append("g")
         .attr("class","edge")
@@ -187,7 +185,7 @@ export default {
                 str = "#" + d.color;
             }
             return str;
-        })
+        });
       // 5.2 添加线
       this.links=this.edges.append("path").attr("class","links")
         .attr("d", d => {
@@ -201,7 +199,7 @@ export default {
         });
 
       // 5.3 添加关系文字的容器
-      this.rect_g = this.edges.append("g").attr("class", "rect_g");
+      this.rect_g = this.edges.append("g").attr("class", "rect_g").merge(this.edges);
 
       // 5.4 添加rect
       this.rects = this.rect_g.append("rect")
@@ -221,14 +219,16 @@ export default {
         .attr("y", 5)
         .attr("text-anchor", "middle")  // <text>文本中轴对齐方式居中  start | middle | end
         .style("font-size",12).text(d=>{return d.relation}); 
-      
-      this.nodeG = this.relMap_g.selectAll("g.nodeG").data(this.config.nodes)
+
+      this.nodeG = this.relMap_g.selectAll("g.nodeG").data(this.config.nodes);
+      // this.nodeG.exit().remove();
+      this.nodeG = this.nodeG
           .enter().append("g").attr('class',"nodeG")
           .on('mouseover',(d)=>{
             // _this.showTootip(this,d);
           }).on("mouseout",(d)=>{
             // _this.showTootip(this);
-          });
+          }).merge(this.nodeG);
       // 6.关系图添加用于显示头像的节点
       this.nodeCircles =  this.nodeG.append("circle")
           .attr("class","nodeCircle")
@@ -289,7 +289,7 @@ export default {
           .style("height",this.config.r * 0.5)
           .on("click",function(d,i){
               _this.setnodeShrinkExtBtnStatus(d,i);
-          })
+          }).merge(this.nodeG)
       this.initForce();
     },
     // 更新checkbox选中状态....
@@ -403,170 +403,9 @@ export default {
     },
     // 添加节点....
     addNodes(_exData,d,i){
-      this.config.links = this.config.links.concat(_exData.links);
-      this.config.nodes = this.config.nodes.concat(_exData.nodes);      
-      this.patterns = this.defs
-          .selectAll("pattern.patternclass")
-          .data(this.config.nodes)
-          .exit()
-          .append("pattern")
-          .attr("class", "patternclass")
-          .attr("id", function (d, index) {
-            return 'avatar' + d.id;
-          })
-          // 两个取值userSpaceOnUse  objectBoundingBox
-          .attr('patternUnits', 'objectBoundingBox')
-          // <pattern>，x、y值的改变决定图案的位置，宽度、高度默认为pattern图案占填充图形的百分比。
-          .attr("x", "0")
-          .attr("y", "0")
-          .attr("width", "1")
-          .attr("height", "1");   
-      this.patterns.append("image")
-          .attr("class", "circle")
-          .attr("xlink:href", function (d) {
-              return d.avatar || "https://static.linkeddb.com/m/images/none.jpg"; // 修改节点头像
-          })
-          .attr("src", function (d) {
-              return d.avatar || "https://static.linkeddb.com/m/images/none.jpg"; // 修改节点头像
-          })
-          .attr("height", this.config.r*2)
-          .attr("width", this.config.r*2)
-          .attr("preserveAspectRatio", "xMidYMin slice");
-
-      // 3.4 名字
-      this.patterns.append("rect").attr("x", "0").attr("y", 4/3*this.config.r).attr("width", 2*this.config.r).attr("height", 2/3*this.config.r).attr("fill", "black").attr("opacity", "0.5");
-      this.patterns.append("text").attr("class", "nodetext")
-          .attr("x", this.config.r).attr("y", (5/3*this.config.r))
-          .attr('text-anchor', 'middle')
-          .attr("fill", "#fff")
-          .style("font-size", this.config.r/3)
-          .text(function (d) {
-              return d.name;
-          }).merge(this.patterns);   
-      this.edges = this.relMap_g
-        .selectAll("g.edge")
-        .data(this.config.links)
-        .exit()
-        .append("g")
-        .attr("class","edge")
-        .on('mouseover', function () {
-            _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 4);
-        })
-        .on('mouseout', function () {
-            _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 1);
-        }).on('click',(d)=>{
-
-        }).attr('fill', function (d) {
-            var str = '#bad4ed';
-            if (d.color) {
-                str = "#" + d.color;
-            }
-            return str;
-        })    
-      // 5.2 添加线
-      this.links=this.edges.append("path").attr("class","links")
-        .attr("d", d => {
-            return `M${this.config.linkSrc},0L${this.getDis(d.source,d.target)},0`
-        })
-        .style("marker-end", "url(#marker)")
-        // .attr("refX",this.config.r)
-        .attr('stroke', (d)=> {
-            var str=d.color ? "#"+d.color : this.config.linkColor ;
-            return str;
-        });
-
-      // 5.3 添加关系文字的容器
-      this.rect_g = this.edges.append("g").attr("class", "rect_g");
-
-      // 5.4 添加rect
-      this.rects = this.rect_g.append("rect")
-        .attr("x", 40)
-        .attr("y", -10)
-        .attr("width", 40)
-        .attr("height", 20)
-        .attr("fill", "white")
-        .attr('stroke',  (d)=> {
-            var str=d.color ? "#"+d.color : this.config.linkColor ;
-            return str;
-        })
-
-      // 5.5 文本标签  坐标（x,y）代表 文本的左下角的点
-      this.texts = this.rect_g.append("text")
-        .attr("x", 40)
-        .attr("y", 5)
-        .attr("text-anchor", "middle")  // <text>文本中轴对齐方式居中  start | middle | end
-        .style("font-size",12).text(d=>{return d.relation});       
-      this.nodeG = this.relMap_g.selectAll("g.nodeG").data(this.config.nodes)
-          .exit().append("g").attr('class',"nodeG")
-          .on('mouseover',(d)=>{
-            // _this.showTootip(this,d);
-          }).on("mouseout",(d)=>{
-            // _this.showTootip(this);
-          });
-      // 6.关系图添加用于显示头像的节点
-      this.nodeCircles =  this.nodeG.append("circle")
-          .attr("class","nodeCircle")
-          .style("cursor", "pointer")
-          .attr("fill", function (d) {
-              return ("url(#avatar" + d.id + ")");
-          })
-          .attr("stroke", "#ccf1fc")
-          .attr("stroke-width", this.config.strokeWidth)
-          .attr("r", this.config.r)
-          .on('mouseover', function(d){
-              if(_this.config.isHighLight){
-                  _this.highlightObject(d);
-              }
-          })
-          .on('mouseout', function(d){
-              if(_this.config.isHighLight){
-                  _this.highlightObject(null);
-              }
-          })
-          // 应用 自定义的 拖拽事件
-          .call(this.$d3.drag()
-          .on('start', function (d) {
-              _this.$d3.event.sourceEvent.stopPropagation();
-              // restart()方法重新启动模拟器的内部计时器并返回模拟器。
-              // 与simulation.alphaTarget或simulation.alpha一起使用时，此方法可用于在交互
-              // 过程中进行“重新加热”模拟，例如在拖动节点时，在simulation.stop暂停之后恢复模拟。
-              // 当前alpha值为0，需设置alphaTarget让节点动起来
-              if (!_this.$d3.event.active) _this.simulation.alphaTarget(0.3).restart();
-              d.fx = d.x;
-              d.fy = d.y;
-          }).on('drag', function (d) {
-              // d.fx属性- 节点的固定x位置
-              // 在每次tick结束时，d.x被重置为d.fx ，并将节点 d.vx设置为零
-              // 要取消节点，请将节点 .fx和节点 .fy设置为空，或删除这些属性。
-              d.fx = _this.$d3.event.x;
-              d.fy = _this.$d3.event.y;
-          }).on('end', function (d) {
-              // 让alpha目标值值恢复为默认值0,停止力模型
-              if (!_this.$d3.event.active) _this.simulation.alphaTarget(0);
-              d.fx = null;
-              d.fy = null;
-          }));   
-      // 6.1 关系图添加用于显示checkbox的按钮
-      this.nodeCheckbox = this.nodeG.append('image').attr("class","nodeCheckbox")
-          .attr("id", (d)=>{ return `${this.cId}nodeCheckbox${d.id}`})
-          .attr("xlink:href",(d)=>{ return '/img/expand.png' })
-          .style("width",this.config.r * 0.5)
-          .style("height",this.config.r * 0.5)
-          .on("click",function(d,i){
-              _this.setCheckboxStatus(d,i);
-          })
-      // 6.2 关系图添加用于显示扩展收缩的按钮
-      this.shrinkExtBtn = this.nodeG.append('image').attr("class","nodeShrinkExtBtn")
-          .attr("id", (d)=>{ return `${this.cId}nodeShrinkExtBtn${d.id}`})
-          .attr("xlink:href",(d)=>{ return '/img/expand.png' })
-          .style("width",this.config.r * 0.5)
-          .style("height",this.config.r * 0.5)
-          .on("click",function(d,i){
-              _this.setnodeShrinkExtBtnStatus(d,i);
-          })   
-      // this.nodeG.merge(this.nodeG);
-      debugger
-      this.simulation.alphaTarget(0.3).restart();
+      this.config.links = [...this.config.links,..._exData.links];
+      this.config.nodes = [...this.config.nodes,..._exData.nodes];  
+      this.init();
     },
     highlightObject(obj){// 高亮和取消高亮
         let _this = this;

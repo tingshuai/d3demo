@@ -1,6 +1,6 @@
 <template>
   <div class="home" ref="relationMap">
-    <svg id="svg" width="960" height="600"></svg>
+    <svg id="svg"></svg>
   </div>
 </template>
 
@@ -40,16 +40,16 @@ export default {
     }
   },
   mounted(){
+    this.$nextTick(()=>{
       let _this = this;
-      var svg = this.$d3.select("svg"),
-          width = +svg.attr("width"),
-          height = +svg.attr("height");
-          this.color = this.$d3.scaleOrdinal(this.$d3.schemeCategory10);
+      let relationMap = this.$refs.relationMap;
+      var svg = this.$d3.select("#svg").attr('width',relationMap.offsetWidth).attr("height",relationMap.offsetHeight);
+      this.color = this.$d3.scaleOrdinal(this.$d3.schemeCategory10);
 
       var a = {id: "a"},
           b = {id: "b"},
           c = {id: "c"};
-          this.nodes = [a, b, c],
+          this.nodes = [a, b, c];
           this.links = [];
 
       this.simulation = this.$d3.forceSimulation(this.nodes)
@@ -60,11 +60,11 @@ export default {
           .alphaTarget(1)
           .on("tick", this.ticked);
 
-      var g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+      var g = svg.append("g").attr("transform", "translate(" + relationMap.offsetWidth / 2 + "," + relationMap.offsetHeight / 2 + ")");
       this.link = g.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link");
       this.node = g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node");
-
       this.restart();
+
 
       this.$d3.timeout(function() {
         _this.links.push({source: a, target: b}); // Add a-b.
@@ -86,6 +86,7 @@ export default {
         _this.links.push({source: c, target: a}); // Re-add c-a.
         _this.restart();
       }, 2000, this.$d3.now() + 1000);
+    })
   },
   methods:{
     ticked(){
@@ -98,15 +99,16 @@ export default {
     },
     restart(){
         let _this = this;
+      let relationMap = this.$refs.relationMap;
+
         // Apply the general update pattern to the nodes.
         this.node = this.node.data(this.nodes, function(d) { return d.id;});
 
         this.node.exit().transition().attr("r", 0).remove();
-
         this.node = this.node.enter().append("circle")
             .attr("fill", function(d) { return _this.color(d.id); })
-            .call(function(d) { d.transition().attr("r", 8); })
-            .merge(this.node);
+            .call(function(d) { d.transition().attr("r", 8); }).merge(this.node)
+            
 
         // Apply the general update pattern to the links.
         this.link = this.link.data(this.links, function(d) { return d.source.id + "-" + d.target.id; });
@@ -147,6 +149,10 @@ export default {
 }
 </script>
 <style lang="less" scoped>
+.home{
+  width: 100%;
+  height: 100%;
+}
 #svg{
 
   /deep/.links line {
