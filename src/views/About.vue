@@ -15,10 +15,10 @@ export default {
   data(){
     return {
       simulation:null,
-      config:{
         width: 375, // 总画布svg的宽
         height: 610,
         nodes: [],
+        color:null,
         links: [],
         graph:null,
         link:null,
@@ -37,73 +37,97 @@ export default {
         linkColor:'#bad4ed',    //链接线默认的颜色
         strokeColor: '#7ecef4', // 头像外围包裹的颜色
         strokeWidth: 3, // 头像外围包裹的宽度        
-      }
     }
   },
   mounted(){
-    var svg = this.$d3.select("svg"),
-    width = +svg.attr("width"),
-    height = +svg.attr("height");
-    let _this = this;
-    debugger
-    console.log('d3',this.$d3);
-    // this.simulation = this.$d3.forceSimulation()
-    //     .force("link", this.$d3.forceLink().id((d)=> { return d.id; }))
-    //     .force("charge", this.$d3.forceManyBody())
-    //     .force("center", this.$d3.forceCenter(width / 2, height / 2));
-    this.$d3.json("/data.json").then((graph)=>{
-      this.graph = graph;
-      this.link = svg.append("g")
-        .attr("class", "links")
-        .selectAll("line")
-        .data(graph.links)
-        .enter().append("line");
-      
-      this.node = svg.append("g")
-        .attr("class", "nodes")
-        .selectAll("circle")
-        .data(graph.nodes)
-        .enter().append("circle")
-        .attr("r", 12.5)
-        .call(_this.$d3.drag()
-              .on("start", (d)=>{_this.dragstarted(d)})
-              .on("drag", (d)=>{_this.dragged(d)})
-              .on("end", (d)=>{_this.dragended(d)}));
-      this.initForce();
-    });
+      let _this = this;
+      var svg = this.$d3.select("svg"),
+          width = +svg.attr("width"),
+          height = +svg.attr("height");
+          this.color = this.$d3.scaleOrdinal(this.$d3.schemeCategory10);
+
+      var a = {id: "a"},
+          b = {id: "b"},
+          c = {id: "c"};
+          this.nodes = [a, b, c],
+          this.links = [];
+
+      this.simulation = this.$d3.forceSimulation(this.nodes)
+          .force("charge", this.$d3.forceManyBody().strength(-1000))
+          .force("link", this.$d3.forceLink(this.links).distance(200))
+          .force("x", this.$d3.forceX())
+          .force("y", this.$d3.forceY())
+          .alphaTarget(1)
+          .on("tick", this.ticked);
+
+      var g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+      this.link = g.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link");
+      this.node = g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node");
+
+      this.restart();
+
+      this.$d3.timeout(function() {
+        _this.links.push({source: a, target: b}); // Add a-b.
+        _this.links.push({source: b, target: c}); // Add b-c.
+        _this.links.push({source: c, target: a}); // Add c-a.
+        _this.restart();
+      }, 1000);
+
+      this.$d3.interval(function() {
+        _this.nodes.pop(); // Remove c.
+        _this.links.pop(); // Remove c-a.
+        _this.links.pop(); // Remove b-c.
+        _this.restart();
+      }, 2000, this.$d3.now());
+
+      this.$d3.interval(function() {
+        _this.nodes.push(c); // Re-add c.
+        _this.links.push({source: b, target: c}); // Re-add b-c.
+        _this.links.push({source: c, target: a}); // Re-add c-a.
+        _this.restart();
+      }, 2000, this.$d3.now() + 1000);
   },
   methods:{
-    initForce(){
-      let _parentNode = this.$refs.relationMap;
+    ticked(){
+      this.node.attr("cx", function(d) { return d.x; }).attr("cy", function(d) { return d.y; })
 
-      this.simulation = this.$d3.forceSimulation()
-      // simulation.force(name,[force])函数，添加某种力
-          .force("link", this.$d3.forceLink().id(d => {return d.id}))
-          // 万有引力
-          .force("charge", this.$d3.forceManyBody().strength(this.config.chargeStrength))
-          // this.$d3.forceCenter()用指定的x坐标和y坐标创建一个新的居中力。
-          .force("center", this.$d3.forceCenter(_parentNode.offsetWidth/2, _parentNode.offsetHeight/2))
-          // 碰撞作用力，为节点指定一个radius区域来防止节点重叠，设置碰撞力的强度，范围[0,1], 默认为0.7。设置迭代次数，默认为1，迭代次数越多最终的布局效果越好，但是计算复杂度更高
-          .force("collide", this.$d3.forceCollide(this.config.collide).strength(0.2).iterations(5))
-          // 在计时器的每一帧中，仿真的alpha系数会不断削减,当alpha到达一个系数时，仿真将会停止，也就是alpha的目标系数alphaTarget，该值区间为[0,1]. 默认为0，
-          // 控制力学模拟衰减率，[0-1] ,设为0则不停止 ， 默认0.0228，直到0.001
-          .alphaDecay(this.config.alphaDecay)
-          // 监听事件 ，tick|end ，例如监听 tick 滴答事件        
-      this.simulation.nodes(this.graph.nodes).on("tick", ()=>{
-        this.ticked(this.link,this.node)
-      });
-      
-      this.simulation.force("link").links(this.graph.links);
+      this.link.attr("x1", function(d) { return d.source.x; })
+          .attr("y1", function(d) { return d.source.y; })
+          .attr("x2", function(d) { return d.target.x; })
+          .attr("y2", function(d) { return d.target.y; });
     },
-    ticked(link,node){
-        link
-            .attr("x1", function(d) { return d.source.x; })
-            .attr("y1", function(d) { return d.source.y; })
-            .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
-        node
-            .attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; });
+    restart(){
+        let _this = this;
+        // Apply the general update pattern to the nodes.
+        this.node = this.node.data(this.nodes, function(d) { return d.id;});
+
+        this.node.exit().transition().attr("r", 0).remove();
+
+        this.node = this.node.enter().append("circle")
+            .attr("fill", function(d) { return _this.color(d.id); })
+            .call(function(d) { d.transition().attr("r", 8); })
+            .merge(this.node);
+
+        // Apply the general update pattern to the links.
+        this.link = this.link.data(this.links, function(d) { return d.source.id + "-" + d.target.id; });
+
+        // Keep the exiting links connected to the moving remaining nodes.
+        this.link.exit().transition()
+            .attr("stroke-opacity", 0)
+            .attrTween("x1", function(d) { return function() { return d.source.x; }; })
+            .attrTween("x2", function(d) { return function() { return d.target.x; }; })
+            .attrTween("y1", function(d) { return function() { return d.source.y; }; })
+            .attrTween("y2", function(d) { return function() { return d.target.y; }; })
+            .remove();
+
+        this.link = this.link.enter().append("line")
+          .call(function(d) { d.transition().attr("stroke-opacity", 1); })
+          .merge(this.link);
+
+        // Update and restart the simulation.
+        this.simulation.nodes(this.nodes);
+        this.simulation.force("link").links(this.links);
+        this.simulation.alpha(1).restart();
     },
     dragended(d){
       if (!this.$d3.event.active) this.simulation.alphaTarget(0);
