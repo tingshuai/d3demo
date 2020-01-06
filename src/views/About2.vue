@@ -76,24 +76,29 @@ export default {
         _this.restart();
       }, 1000);
 
-      // this.$d3.interval(function() {
-      //   _this.nodes.pop(); // Remove c.
-      //   _this.links.pop(); // Remove c-a.
-      //   _this.links.pop(); // Remove b-c.
-      //   _this.restart();
-      // }, 2000, this.$d3.now());
+      this.$d3.interval(function() {
+        _this.nodes.pop(); // Remove c.
+        _this.links.pop(); // Remove c-a.
+        _this.links.pop(); // Remove b-c.
+        _this.restart();
+      }, 2000, this.$d3.now());
 
-      // this.$d3.interval(function() {
-      //   _this.nodes.push(c); // Re-add c.
-      //   _this.links.push({source: b, target: c}); // Re-add b-c.
-      //   _this.links.push({source: c, target: a}); // Re-add c-a.
-      //   _this.restart();
-      // }, 2000, this.$d3.now() + 1000);
+      this.$d3.interval(function() {
+        _this.nodes.push(c); // Re-add c.
+        _this.links.push({source: b, target: c}); // Re-add b-c.
+        _this.links.push({source: c, target: a}); // Re-add c-a.
+        _this.restart();
+      }, 2000, this.$d3.now() + 1000);
     })
   },
   methods:{
     ticked(){
-      this.node.attr("cx", function(d) { return d.x; }).attr("cy", function(d) { return d.y; })
+      this.node.attr("cx", function(d) {         
+        return d.x; }).attr("cy", function(d) { 
+          if(d.circleEl){
+             d.circleEl.attr("cx", d.x).attr("cy", d.y);
+          }
+          return d.y; })
 
       this.link.attr("x1", function(d) { return d.source.x; })
           .attr("y1", function(d) { return d.source.y; })
@@ -116,9 +121,30 @@ export default {
         this.node = this.node.data(this.nodes, function(d) { return d.id;});
 
         this.node.exit().transition().attr("r", 0).remove();
-        this.node = this.node.enter().append("circle")
-            .attr("fill", function(d) { return _this.color(d.id); })
-            .call(function(d) { d.transition().attr("r", 8); }).merge(this.node)
+           this.node = this.node.enter().append("g")
+            .attr("class", function(d) { return "nodeG"})
+            .attr("id", function(d) { return d.id})
+            .call(function(d) { d.transition().attr("r", 8); }).merge(this.node);
+            this.node.each(function(d){
+              if(d.circleEl){
+                d.circleEl.remove();
+                d.circleEl = null;
+              }
+              if(!d.circleEl){
+              _this.$d3.select(this).append("circle").attr("cx", d.x).attr("cy", d.y).attr("class",'nodeCircle').attr("fill", "#F00").attr("r",20);
+              d.circleEl = _this.$d3.select(this).select(".nodeCircle");
+              }else{
+                d.circleEl.attr("cx", d.x).attr("cy", d.y);
+              }
+              console.log(this)
+              // this.append("circle").attr("class",'nodeCircle').attr("fill", "#F00").attr("r",20);
+              // _this.$d3.select(this).data(d).enter().append("circle").attr("class",'nodeCircle').attr("fill", "#F00").attr("r",20);
+            })
+            // this.node.append("circle").data(1).enter().exit().attr("class",'nodeCircle').attr("fill", "#F00").attr("r",20);
+          console.log("this.node", this.node)
+          // this.node = this.node.enter().append("circle")
+            // .attr("fill", function(d) { return _this.color(d.id); })
+            // .call(function(d) { d.transition().attr("r", 8); }).merge(this.node)
             
 
         // Apply the general update pattern to the links.
