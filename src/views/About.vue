@@ -18,6 +18,7 @@ export default {
         width: 375, // 总画布svg的宽
         height: 610,
         nodes: [],
+        circle:null,
         color:null,
         links: [],
         graph:null,
@@ -48,9 +49,10 @@ export default {
 
       var a = {id: "a"},
           b = {id: "b"},
-          c = {id: "c"};
+          c = {id: "c"},
+          d = {id: "d"};
           this.nodes = [a, b, c];
-          this.links = [];
+          this.links = [{source: b, target: a},{source: c, target: a}];
 
       this.simulation = this.$d3.forceSimulation(this.nodes)
           .force("charge", this.$d3.forceManyBody().strength(-1000))
@@ -66,31 +68,31 @@ export default {
       this.restart();
 
 
-      this.$d3.timeout(function() {
-        _this.links.push({source: a, target: b}); // Add a-b.
-        _this.links.push({source: b, target: c}); // Add b-c.
-        _this.links.push({source: c, target: a}); // Add c-a.
-        _this.restart();
-      }, 1000);
+      // this.$d3.interval(function() {
+      //   _this.nodes.pop(); // Remove c.
+      //   _this.links.pop(); // Remove c-a.
+      //   _this.links.pop(); // Remove b-c.
+      //   _this.restart();
+      // }, 2000, this.$d3.now());
 
       this.$d3.interval(function() {
-        _this.nodes.pop(); // Remove c.
-        _this.links.pop(); // Remove c-a.
-        _this.links.pop(); // Remove b-c.
-        _this.restart();
-      }, 2000, this.$d3.now());
-
-      this.$d3.interval(function() {
-        _this.nodes.push(c); // Re-add c.
-        _this.links.push({source: b, target: c}); // Re-add b-c.
-        _this.links.push({source: c, target: a}); // Re-add c-a.
-        _this.restart();
+        _this.$d3.timeout(function() {
+          _this.nodes.push(d)
+          _this.links.push({source: d, target: a}); // Add a-b.
+          _this.restart();
+        }, 1000);
+        _this.$d3.timeout(function() {
+          _this.nodes.pop()
+          _this.links.pop(); // Add a-b.
+          _this.restart();
+        }, 2000);        
       }, 2000, this.$d3.now() + 1000);
     })
   },
   methods:{
     ticked(){
-      this.node.attr("cx", function(d) { return d.x; }).attr("cy", function(d) { return d.y; })
+      this.circle.attr("cx", function(d) { return d.x; }).attr("cy", function(d) { return d.y; })
+      // this.node.attr("cx", function(d) { return d.x; }).attr("cy", function(d) { return d.y; })
 
       this.link.attr("x1", function(d) { return d.source.x; })
           .attr("y1", function(d) { return d.source.y; })
@@ -99,17 +101,16 @@ export default {
     },
     restart(){
         let _this = this;
-      let relationMap = this.$refs.relationMap;
+        let relationMap = this.$refs.relationMap;
 
         // Apply the general update pattern to the nodes.
         this.node = this.node.data(this.nodes, function(d) { return d.id;});
-
         this.node.exit().transition().attr("r", 0).remove();
-        this.node = this.node.enter().append("circle")
+        this.nodgG = this.node.enter().append("g").attr('class','nodeG');
+        this.circle = this.nodgG.append("circle")
             .attr("fill", function(d) { return _this.color(d.id); })
             .call(function(d) { d.transition().attr("r", 8); }).merge(this.node)
             
-
         // Apply the general update pattern to the links.
         this.link = this.link.data(this.links, function(d) { return d.source.id + "-" + d.target.id; });
 
@@ -121,7 +122,6 @@ export default {
             .attrTween("y1", function(d) { return function() { return d.source.y; }; })
             .attrTween("y2", function(d) { return function() { return d.target.y; }; })
             .remove();
-
         this.link = this.link.enter().append("line")
           .call(function(d) { d.transition().attr("stroke-opacity", 1); })
           .merge(this.link);
@@ -129,7 +129,7 @@ export default {
         // Update and restart the simulation.
         this.simulation.nodes(this.nodes);
         this.simulation.force("link").links(this.links);
-        this.simulation.alpha(1).restart();
+        // this.simulation.alpha(1).restart();
     },
     dragended(d){
       if (!this.$d3.event.active) this.simulation.alphaTarget(0);

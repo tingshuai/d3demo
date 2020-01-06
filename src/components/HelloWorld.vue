@@ -19,6 +19,8 @@ export default {
   },
   data(){
     return {
+      edgesNodes:null,
+      nodeGNodes:null,
       simulation:null,
       SVG:null,
       relMap_g:null,
@@ -165,10 +167,14 @@ export default {
           }).merge(this.patterns); 
           
       // 5.关系图添加线
-      this.edges = this.relMap_g.selectAll("g.edge").data(this.config.links);
-      // this.edges.exit().transition().style("opacity", 0).remove();
+      this.edgesNodes = this.relMap_g.selectAll("g.edge").data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`});
+      console.log("this.edgesNodes",this.edgesNodes);
+
+      this.edgesNodes.exit().transition().style("opacity", 0).remove();
       // 5.1  每条线是个容器，有线 和一个装文字的容器
-      this.edges = this.edges
+      console.log("this.edgesNodes",this.edgesNodes);
+      
+      this.edges = this.edgesNodes
         .enter()
         .append("g")
         .attr("class","edge")
@@ -185,7 +191,9 @@ export default {
                 str = "#" + d.color;
             }
             return str;
-        });
+        })
+      console.log("this.edges2",this.edges);
+
       // 5.2 添加线
       this.links=this.edges.append("path").attr("class","links")
         .attr("d", d => {
@@ -199,7 +207,7 @@ export default {
         });
 
       // 5.3 添加关系文字的容器
-      this.rect_g = this.edges.append("g").attr("class", "rect_g").merge(this.edges);
+      this.rect_g = this.edges.append("g").attr("class", "rect_g");
 
       // 5.4 添加rect
       this.rects = this.rect_g.append("rect")
@@ -220,15 +228,15 @@ export default {
         .attr("text-anchor", "middle")  // <text>文本中轴对齐方式居中  start | middle | end
         .style("font-size",12).text(d=>{return d.relation}); 
 
-      this.nodeG = this.relMap_g.selectAll("g.nodeG").data(this.config.nodes);
-      // this.nodeG.exit().remove();
-      this.nodeG = this.nodeG
-          .enter().append("g").attr('class',"nodeG")
-          .on('mouseover',(d)=>{
-            // _this.showTootip(this,d);
-          }).on("mouseout",(d)=>{
-            // _this.showTootip(this);
-          }).merge(this.nodeG);
+      this.nodeGNodes = this.relMap_g.selectAll("g.nodeG").data(this.config.nodes,function(d){ return d.id });
+      this.nodeGNodes.exit().remove();
+      this.nodeG = this.nodeGNodes
+        .enter().append("g").attr('class',"nodeG")
+        .on('mouseover',(d)=>{
+          // _this.showTootip(this,d);
+        }).on("mouseout",(d)=>{
+          // _this.showTootip(this);
+        })
       // 6.关系图添加用于显示头像的节点
       this.nodeCircles =  this.nodeG.append("circle")
           .attr("class","nodeCircle")
@@ -271,7 +279,7 @@ export default {
               if (!_this.$d3.event.active) _this.simulation.alphaTarget(0);
               d.fx = null;
               d.fy = null;
-          }));   
+          })) 
       // 6.1 关系图添加用于显示checkbox的按钮
       this.nodeCheckbox = this.nodeG.append('image').attr("class","nodeCheckbox")
           .attr("id", (d)=>{ return `${this.cId}nodeCheckbox${d.id}`})
@@ -289,8 +297,14 @@ export default {
           .style("height",this.config.r * 0.5)
           .on("click",function(d,i){
               _this.setnodeShrinkExtBtnStatus(d,i);
-          }).merge(this.nodeG)
-      this.initForce();
+          })
+      if( first ){
+        this.initForce();
+      }else{
+        this.simulation.nodes(this.config.nodes);
+        this.simulation.force("link").links(this.config.links);
+        this.simulation.alpha(1).restart();        
+      }
     },
     // 更新checkbox选中状态....
     setCheckboxStatus(d,i){
