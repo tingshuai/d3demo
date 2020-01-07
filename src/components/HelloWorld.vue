@@ -1,5 +1,26 @@
 <template>
-  <div class="relationMap" id="relationMap" ref="relationMap">
+  <div class="relationMap" id="relationMap" :class="isFullScreen ? 'fullscreen' : ''" ref="relationMap">
+    <div class="controlBar">
+        <section class="part part1">
+          <img class="icon" src="/img/expand.png" alt="">
+          <el-checkbox-group class="popControl" v-model="checkList">
+            <el-checkbox label="复选框 A"></el-checkbox>
+            <el-checkbox label="复选框 B"></el-checkbox>
+            <el-checkbox label="复选框 C"></el-checkbox>
+            <el-checkbox label="禁用" disabled></el-checkbox>
+            <el-checkbox label="选中且禁用" disabled></el-checkbox>
+          </el-checkbox-group>
+        </section>
+        <section class="part part2">
+          <img class="icon" src="/img/shrink.png" alt="">
+          <div class="inputW">
+            <el-input type="text" placeholder="请输入关键字"></el-input>
+          </div>
+        </section>
+        <section class="part part3">
+          <img class="icon" src="/img/expand.png" @click="toggleFullScreen" alt="">
+        </section>
+    </div>
   </div>
 </template>
 
@@ -19,6 +40,8 @@ export default {
   },
   data(){
     return {
+      isFullScreen:true,//是否全屏..
+      checkList:[],//选中的筛选项.....
       edgesNodes:null,
       nodeGNodes:null,
       simulation:null,
@@ -66,8 +89,9 @@ export default {
   mounted(){
     this.$d3.json("/miserables.json").then((graph)=>{
       graph.nodes.forEach((val)=>{
-        val.checked = false;
-        val.expanded = false;
+        val.checked = false;//是否选中
+        val.expanded = false;//是否展开
+        val.active = false;//是否处于焦点
       })
       this.config.nodes = graph.nodes;
       this.config.links = graph.links;
@@ -305,6 +329,10 @@ export default {
           .style("width",this.config.r * 0.5)
           .style("height",this.config.r * 0.5)
           .on("click",function(d,i){
+            // 固定节点
+              d.fx = d.x;
+              d.fy = d.y;
+            // 设置节点状态
               _this.setnodeShrinkExtBtnStatus(d,i);
           })
       if( first ){
@@ -425,7 +453,9 @@ export default {
         })    // x 坐标为两点中心距离减去自身长度一半
 
         // 5.修改节点的位置
-        this.nodeCircles.attr("cx", (d) => { return d.x; }).attr("cy", (d) => { return d.y; })       
+        this.nodeCircles.attr("cx", (d) => { return d.x; }).attr("cy", (d) => {
+          return d.y; 
+        })       
         // 5.修改checkbox的位置
         this.nodeCheckbox.attr("x", function(d){ return d.x - _this.config.r - this.getBBox().width ; }).attr("y", function(d) { return d.y - this.getBBox().height; })       
         // 5.修改checkbox的位置
@@ -447,14 +477,32 @@ export default {
     },
     // 添加节点....
     addAndDeleteNodes(_exData,d,i){
-      if( d.expanded ){
+      // 设置焦点节点
+      this.config.nodes.forEach((item)=>{
+        if( item.id == d.id ){
+          item.active = !item.active;
+        }else{
+          item.active = false;
+        }
+      })
+      if( d.expanded ){//展开
         this.config.links = [...this.config.links,..._exData.links];
         this.config.nodes = [...this.config.nodes,..._exData.nodes];  
-        this.init();
-      }else{
-        this.nodeG;this.nodeCircles;this.nodeCircles;this.nodeCheckbox;this.shrinkExtBtn;       
-        debugger
+      }else{//收起..
+        _exData.nodes.forEach((val)=>{
+          let _index = this.config.nodes.findIndex((item)=>{ return item.id == val.id });
+          if( _index != -1 ){
+            this.config.nodes.splice(_index,1);
+          }
+        })
+        _exData.links.forEach((val)=>{
+          let _index = this.config.links.findIndex((item)=>{ return (item.target == val.target && item.source == val.source ) });
+          if( _index != -1 ){
+            this.config.links.splice(_index,1);
+          }
+        })        
       }
+      this.init();
     },
     highlightObject(obj){// 高亮和取消高亮
         let _this = this;
@@ -588,16 +636,42 @@ export default {
       }
       r = r * (180 / Math.PI);
       return "translate(" + source.x + "," + source.y + ")rotate(" + r + ")";      
+    },
+    // 切换全屏...
+    toggleFullScreen(){
+      this.isFullScreen = !this.isFullScreen;
+      let _parentNode = this.$refs.relationMap;
+      this.$nextTick(()=>{
+          this.SVG.attr("width",_parentNode.offsetWidth).attr("height",_parentNode.offsetHeight)
+          this.$nextTick(()=>{
+          this.relMap_g = this.SVG.append("g")
+                    .attr("id", "relMap_g")
+                    .attr("width", _parentNode.offsetWidth)
+                    .attr("height", _parentNode.offsetHeight);           
+          this.simulation.force("center", this.$d3.forceCenter(_parentNode.offsetWidth, _parentNode.offsetHeight));
+          this.simulation.alpha(1).restart();
+        },500)
+      })
     }
   }
 }
 </script>
 <style lang="less" scoped>
 #relationMap{
-  width:100%;
-  height: 100%;
+  width:500px;
+  height: 500px;
   display: flex;
   flex: 1;
+  position: relative;
+  border: 1px solid red;
+  &.fullscreen{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+  }
   /deep/.tooltip{
     position: absolute;
     z-index: 10;
@@ -622,6 +696,23 @@ export default {
           stroke-width:8;
           stroke: #a3e5f9;
         }
+      }
+    }
+  }
+  .controlBar{
+    display: flex;
+    position: absolute;
+    right: 20px;
+    top:10px;
+    z-index: 10;
+    .part{
+      display: flex;
+      margin: 0 7px;
+      position: relative;
+      .icon{
+        display: flex;
+        width: 20px;
+        height: 20px;
       }
     }
   }

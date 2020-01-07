@@ -109,10 +109,10 @@ export default {
     },
     addData(){
       var _this = this;
+      let relationMap = this.$refs.relationMap;
       var data = { id: ('id_'+ Math.random()).replace('0.', '') };
       this.nodes.push(data); // Re-add c.
       this.links.push({source: this.b, target: data}); 
-debugger
       this.nodeG= this.$d3.select("g#gNodeW").selectAll(".nodeG").data(this.nodes,function(d){ return d.id });
       // this.nodeG.exit().remove();
       let _nodeG = this.nodeG.enter().append("g").attr("class","nodeG");
@@ -133,9 +133,12 @@ debugger
       this.link = _link.enter().append("line")
         .call(function(d) { d.transition().attr("stroke-opacity", 1); })
         .merge(_link);     
+      this.svg.attr('width',relationMap.offsetWidth).attr("height",relationMap.offsetHeight);
+
       this.simulation.nodes(this.nodes);
       this.simulation.force("link").links(this.links);
-      this.simulation.alpha(1).restart()       
+      this.simulation.alpha(1).restart()    
+      this.simulation.force("center", this.$d3.forceCenter(relationMap.offsetWidth/2, relationMap.offsetHeight/2));
     },
     restart(){
         let _this = this;
@@ -149,7 +152,29 @@ debugger
         this.nodeG = this.node.enter().append('g').attr("class","nodeG").merge(this.node);
         this.nodeCircle = this.nodeG.append("circle").attr("class","nodeCircle")
             .attr("fill", function(d) { return _this.color(d.id); })
-            .call(function(d) { d.transition().attr("r", 8); })
+            .call(function(d) { d.transition().attr("r", 8); })// 应用 自定义的 拖拽事件
+          .call(this.$d3.drag()
+          .on('start', function (d) {
+              _this.$d3.event.sourceEvent.stopPropagation();
+              // restart()方法重新启动模拟器的内部计时器并返回模拟器。
+              // 与simulation.alphaTarget或simulation.alpha一起使用时，此方法可用于在交互
+              // 过程中进行“重新加热”模拟，例如在拖动节点时，在simulation.stop暂停之后恢复模拟。
+              // 当前alpha值为0，需设置alphaTarget让节点动起来
+              if (!_this.$d3.event.active) _this.simulation.alphaTarget(0.3).restart();
+              d.fx = d.x;
+              d.fy = d.y;
+          }).on('drag', function (d) {
+              // d.fx属性- 节点的固定x位置
+              // 在每次tick结束时，d.x被重置为d.fx ，并将节点 d.vx设置为零
+              // 要取消节点，请将节点 .fx和节点 .fy设置为空，或删除这些属性。
+              d.fx = _this.$d3.event.x;
+              d.fy = _this.$d3.event.y;
+          }).on('end', function (d) {
+              // 让alpha目标值值恢复为默认值0,停止力模型
+              if (!_this.$d3.event.active) _this.simulation.alphaTarget(0);
+              d.fx = null;
+              d.fy = null;
+          }))
             
         
         // Apply the general update pattern to the links.

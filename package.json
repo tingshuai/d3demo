@@ -10,6 +10,7 @@
   "dependencies": {
     "core-js": "^3.4.4",
     "d3": "^5.15.0",
+    "element-ui": "^2.13.0",
     "register-service-worker": "^1.6.2",
     "relation-chart": "^1.1.5",
     "vue": "^2.6.10",
