@@ -23,6 +23,8 @@ export default {
       nodeGNodes:null,
       simulation:null,
       SVG:null,
+      linksGwrap:null,
+      nodesGwrap:null,
       relMap_g:null,
       defs:null,
       marker:null,
@@ -63,6 +65,10 @@ export default {
   },
   mounted(){
     this.$d3.json("/miserables.json").then((graph)=>{
+      graph.nodes.forEach((val)=>{
+        val.checked = false;
+        val.expanded = false;
+      })
       this.config.nodes = graph.nodes;
       this.config.links = graph.links;
       this.init(true);
@@ -120,13 +126,16 @@ export default {
             .attr("fill", "steelblue");
         // 4.放关系图的容器
         this.relMap_g = this.SVG.append("g")
-            .attr("class", "relMap_g")
+            .attr("id", "relMap_g")
             .attr("width", _parentNode.offsetWidth)
             .attr("height", _parentNode.offsetHeight);              
+
+        this.linksGwrap = this.relMap_g.append("g").attr("id","linksGwrap");
+        this.nodesGwrap = this.relMap_g.append("g").attr("id","nodesGwrap");
       }
 
       // 3.2 添加多个头像图片的 <pattern>
-      this.patterns = this.defs.selectAll("pattern.patternclass").data(this.config.nodes);
+      this.patterns = this.defs.selectAll("pattern.patternclass").data(this.config.nodes,function(d){ return d.id });
       this.patterns.exit().remove();
       this.patterns = this.patterns.enter()
           .append("pattern")
@@ -167,14 +176,14 @@ export default {
           }).merge(this.patterns); 
           
       // 5.关系图添加线
-      this.edgesNodes = this.relMap_g.selectAll("g.edge").data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`});
+      this.edgesNodes = this.$d3.select("g#linksGwrap").selectAll("g.edge").data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`});
       console.log("this.edgesNodes",this.edgesNodes);
 
       this.edgesNodes.exit().transition().style("opacity", 0).remove();
       // 5.1  每条线是个容器，有线 和一个装文字的容器
       console.log("this.edgesNodes",this.edgesNodes);
       
-      this.edges = this.edgesNodes
+      let _edges = this.edgesNodes
         .enter()
         .append("g")
         .attr("class","edge")
@@ -192,10 +201,10 @@ export default {
             }
             return str;
         })
-      console.log("this.edges2",this.edges);
+      console.log("this.edges2",_edges);
 
       // 5.2 添加线
-      this.links=this.edges.append("path").attr("class","links")
+      let _links = _edges.append("path").attr("class","links")
         .attr("d", d => {
             return `M${this.config.linkSrc},0L${this.getDis(d.source,d.target)},0`
         })
@@ -207,10 +216,10 @@ export default {
         });
 
       // 5.3 添加关系文字的容器
-      this.rect_g = this.edges.append("g").attr("class", "rect_g");
+      let _rect_g = _edges.append("g").attr("class", "rect_g");
 
       // 5.4 添加rect
-      this.rects = this.rect_g.append("rect")
+      let _rects = _rect_g.append("rect")
         .attr("x", 40)
         .attr("y", -10)
         .attr("width", 40)
@@ -222,23 +231,23 @@ export default {
         })
 
       // 5.5 文本标签  坐标（x,y）代表 文本的左下角的点
-      this.texts = this.rect_g.append("text")
+      let _texts = _rect_g.append("text")
         .attr("x", 40)
         .attr("y", 5)
         .attr("text-anchor", "middle")  // <text>文本中轴对齐方式居中  start | middle | end
         .style("font-size",12).text(d=>{return d.relation}); 
 
-      this.nodeGNodes = this.relMap_g.selectAll("g.nodeG").data(this.config.nodes,function(d){ return d.id });
+      this.nodeGNodes = this.$d3.select("g#nodesGwrap").selectAll("g.nodeG").data(this.config.nodes,function(d){ return d.id });
       this.nodeGNodes.exit().remove();
-      this.nodeG = this.nodeGNodes
+      let _nodeG = this.nodeGNodes
         .enter().append("g").attr('class',"nodeG")
         .on('mouseover',(d)=>{
           // _this.showTootip(this,d);
         }).on("mouseout",(d)=>{
           // _this.showTootip(this);
-        })
+        });
       // 6.关系图添加用于显示头像的节点
-      this.nodeCircles =  this.nodeG.append("circle")
+      let _nodeCircles =  _nodeG.append("circle")
           .attr("class","nodeCircle")
           .style("cursor", "pointer")
           .attr("fill", function (d) {
@@ -279,9 +288,9 @@ export default {
               if (!_this.$d3.event.active) _this.simulation.alphaTarget(0);
               d.fx = null;
               d.fy = null;
-          })) 
+          }))
       // 6.1 关系图添加用于显示checkbox的按钮
-      this.nodeCheckbox = this.nodeG.append('image').attr("class","nodeCheckbox")
+      let _nodeCheckbox = _nodeG.append('image').attr("class","nodeCheckbox")
           .attr("id", (d)=>{ return `${this.cId}nodeCheckbox${d.id}`})
           .attr("xlink:href",(d)=>{ return '/img/expand.png' })
           .style("width",this.config.r * 0.5)
@@ -290,7 +299,7 @@ export default {
               _this.setCheckboxStatus(d,i);
           })
       // 6.2 关系图添加用于显示扩展收缩的按钮
-      this.shrinkExtBtn = this.nodeG.append('image').attr("class","nodeShrinkExtBtn")
+      let _shrinkExtBtn = _nodeG.append('image').attr("class","nodeShrinkExtBtn")
           .attr("id", (d)=>{ return `${this.cId}nodeShrinkExtBtn${d.id}`})
           .attr("xlink:href",(d)=>{ return '/img/expand.png' })
           .style("width",this.config.r * 0.5)
@@ -299,8 +308,29 @@ export default {
               _this.setnodeShrinkExtBtnStatus(d,i);
           })
       if( first ){
+        // 连线
+        this.edges = _edges;
+        this.links = _links;
+        this.rect_g = _rect_g;
+        this.texts = _texts;
+        this.rects = _rects;
+        // 点
+        this.nodeCircles = _nodeCircles;
+        this.nodeCheckbox = _nodeCheckbox;
+        this.shrinkExtBtn = _shrinkExtBtn;
+        this.nodeG = _nodeG;
         this.initForce();
       }else{
+        this.edges = _edges.merge(this.edges);
+        this.links = _links.merge(this.links);
+        this.rect_g = _rect_g.merge(this.rect_g);
+        this.texts = _texts.merge(this.texts);
+        this.rects = _rects.merge(this.rects);
+
+        this.nodeG = _nodeG.merge(this.nodeG);
+        this.nodeCircles = _nodeCircles.merge(this.nodeCircles);
+        this.nodeCheckbox = _nodeCheckbox.merge(this.nodeCheckbox);
+        this.shrinkExtBtn = _shrinkExtBtn.merge(this.shrinkExtBtn);
         this.simulation.nodes(this.config.nodes);
         this.simulation.force("link").links(this.config.links);
         this.simulation.alpha(1).restart();        
@@ -317,12 +347,12 @@ export default {
         }
       })
     },
-    // 更新checkbox选中状态....
+    // 更新扩展按钮选中状态....
     setnodeShrinkExtBtnStatus(d,i){
-      d.checked = !d.checked;
+      d.expanded = !d.expanded;
       this.$emit("nodeShrinkExtBtn",d,i);
       this.$d3.select(`#${this.cId}nodeShrinkExtBtn${d.id}`).attr("xlink:href",(d)=>{ 
-        if( d.checked ){
+        if( d.expanded ){
           return '/img/shrink.png'
         }else{
           return '/img/expand.png'
@@ -416,10 +446,15 @@ export default {
       d.fy = d.y;
     },
     // 添加节点....
-    addNodes(_exData,d,i){
-      this.config.links = [...this.config.links,..._exData.links];
-      this.config.nodes = [...this.config.nodes,..._exData.nodes];  
-      this.init();
+    addAndDeleteNodes(_exData,d,i){
+      if( d.expanded ){
+        this.config.links = [...this.config.links,..._exData.links];
+        this.config.nodes = [...this.config.nodes,..._exData.nodes];  
+        this.init();
+      }else{
+        this.nodeG;this.nodeCircles;this.nodeCircles;this.nodeCheckbox;this.shrinkExtBtn;       
+        debugger
+      }
     },
     highlightObject(obj){// 高亮和取消高亮
         let _this = this;

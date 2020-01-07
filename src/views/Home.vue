@@ -78,9 +78,7 @@ import hello from '@/components/HelloWorld.vue'
 export default {
   name: 'relationMap',
   components: { hello },
-  props:{
-    
-  },
+  props:{},
   data(){
     return {}
   },
@@ -89,7 +87,7 @@ export default {
   },
   methods:{
     nodeShrinkExtBtn(d,i){
-      this.$refs.zstp.addNodes(_extData,d,i);
+      this.$refs.zstp.addAndDeleteNodes(_extData,d,i);
     }
   }
 }

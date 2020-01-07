@@ -112,7 +112,7 @@ export default {
       var data = { id: ('id_'+ Math.random()).replace('0.', '') };
       this.nodes.push(data); // Re-add c.
       this.links.push({source: this.b, target: data}); 
-
+debugger
       this.nodeG= this.$d3.select("g#gNodeW").selectAll(".nodeG").data(this.nodes,function(d){ return d.id });
       // this.nodeG.exit().remove();
       let _nodeG = this.nodeG.enter().append("g").attr("class","nodeG");
