@@ -19,6 +19,7 @@ export default {
         width: 375, // 总画布svg的宽
         height: 610,
         nodes: [],
+        nodeCircle:null,
         color:null,
         links: [],
         graph:null,
@@ -66,15 +67,11 @@ export default {
       var g = svg.append("g").attr("transform", "translate(" + relationMap.offsetWidth / 2 + "," + relationMap.offsetHeight / 2 + ")");
       this.link = g.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link");
       this.node = g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node");
-      this.restart();
-
-
-      this.$d3.timeout(function() {
         _this.links.push({source: a, target: b}); // Add a-b.
         _this.links.push({source: b, target: c}); // Add b-c.
         _this.links.push({source: c, target: a}); // Add c-a.
-        _this.restart();
-      }, 1000);
+      this.restart();
+
 
       // this.$d3.interval(function() {
       //   _this.nodes.pop(); // Remove c.
@@ -93,8 +90,7 @@ export default {
   },
   methods:{
     ticked(){
-      this.node.attr("cx", function(d) { return d.x; }).attr("cy", function(d) { return d.y; })
-
+      this.nodeCircle.attr("cx", function(d) { return d.x; }).attr("cy", function(d) { return d.y; })
       this.link.attr("x1", function(d) { return d.source.x; })
           .attr("y1", function(d) { return d.source.y; })
           .attr("x2", function(d) { return d.target.x; })
@@ -102,25 +98,35 @@ export default {
     },
     addData(){
       var _this = this;
-      
       var data = { id: ('id_'+ Math.random()).replace('0.', '') };
-        _this.nodes.push(data); // Re-add c.
-        _this.links.push({source: this.b, target: data}); 
-        _this.restart();
+      _this.nodes.push(data); // Re-add c.
+      _this.links.push({source: this.b, target: data}); 
+debugger
+      let _nodeG = this.nodeG.data(this.nodes);
+      // _nodeG.exit().remove();
+      _nodeG.enter().append("circle").attr("class","nodeCircle")
+            .attr("fill", function(d) { return _this.color(d.id); })
+            .call(function(d) { d.transition().attr("r", 8); }).merge(_nodeG)
+
+        this.simulation.nodes(this.nodes);
+        this.simulation.force("link").links(this.links);
+        this.simulation.alpha(1).restart();            
     },
     restart(){
         let _this = this;
-      let relationMap = this.$refs.relationMap;
+        let relationMap = this.$refs.relationMap;
 
         // Apply the general update pattern to the nodes.
         this.node = this.node.data(this.nodes, function(d) { return d.id;});
 
         this.node.exit().transition().attr("r", 0).remove();
-        this.node = this.node.enter().append("circle")
-            .attr("fill", function(d) { return _this.color(d.id); })
-            .call(function(d) { d.transition().attr("r", 8); }).merge(this.node)
-            
 
+        this.nodeG = this.node.enter().append('g').attr("class","nodeG").merge(this.node);
+        this.nodeCircle = this.nodeG.append("circle").attr("class","nodeCircle")
+            .attr("fill", function(d) { return _this.color(d.id); })
+            .call(function(d) { d.transition().attr("r", 8); })
+            
+        
         // Apply the general update pattern to the links.
         this.link = this.link.data(this.links, function(d) { return d.source.id + "-" + d.target.id; });
 
