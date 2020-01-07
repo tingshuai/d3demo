@@ -76,8 +76,8 @@ export default {
           .alphaDecay(this.alphaDecay)
           // 监听事件 ，tick|end ，例如监听 tick 滴答事件
           .on("tick", ()=>this.ticked());
-      this.link = svg.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link");
-      this.node = svg.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node");
+      this.link = svg.append("g").attr("stroke", "#000").attr("id","gLodeW").attr("stroke-width", 1.5).selectAll(".link");
+      this.node = svg.append("g").attr("stroke", "#fff").attr("id","gNodeW").attr("stroke-width", 1.5).selectAll(".node");
         _this.links.push({source: a, target: b}); // Add a-b.
         _this.links.push({source: b, target: c}); // Add b-c.
         _this.links.push({source: c, target: a}); // Add c-a.
@@ -113,9 +113,8 @@ export default {
       this.nodes.push(data); // Re-add c.
       this.links.push({source: this.b, target: data}); 
 
-      
-      this.nodeG= this.nodeG.data(this.nodes);
-      this.nodeG.exit().remove();
+      this.nodeG= this.$d3.select("g#gNodeW").selectAll(".nodeG").data(this.nodes,function(d){ return d.id });
+      // this.nodeG.exit().remove();
       let _nodeG = this.nodeG.enter().append("g").attr("class","nodeG");
       this.nodeCircle = _nodeG.append("circle").attr("class","nodeCircle")
             .attr("fill", function(d) { return _this.color(d.id); })
