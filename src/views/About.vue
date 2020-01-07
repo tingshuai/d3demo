@@ -56,17 +56,28 @@ export default {
           this.nodes = [a, b, c];
           this.links = [];
 
+      // this.simulation = this.$d3.forceSimulation(this.nodes)
+      //     .force("charge", this.$d3.forceManyBody().strength(-1000))
+      //     .force("link", this.$d3.forceLink(this.links).distance(200))
+      //     .force("center", this.$d3.forceCenter(relationMap.offsetWidth/2, relationMap.offsetHeight/2))
+      //     .alphaTarget(1)
+      //     .on("tick", this.ticked);
       this.simulation = this.$d3.forceSimulation(this.nodes)
-          .force("charge", this.$d3.forceManyBody().strength(-1000))
-          .force("link", this.$d3.forceLink(this.links).distance(200))
-          .force("x", this.$d3.forceX())
-          .force("y", this.$d3.forceY())
-          .alphaTarget(1)
-          .on("tick", this.ticked);
-
-      var g = svg.append("g").attr("transform", "translate(" + relationMap.offsetWidth / 2 + "," + relationMap.offsetHeight / 2 + ")");
-      this.link = g.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link");
-      this.node = g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node");
+      // simulation.force(name,[force])函数，添加某种力
+          .force("link", this.$d3.forceLink(this.links).id(d => {return d.id}).distance(200))
+          // 万有引力
+          .force("charge", this.$d3.forceManyBody().strength(this.chargeStrength))
+          // this.$d3.forceCenter()用指定的x坐标和y坐标创建一个新的居中力。
+          .force("center", this.$d3.forceCenter(relationMap.offsetWidth/2, relationMap.offsetHeight/2))
+          // 碰撞作用力，为节点指定一个radius区域来防止节点重叠，设置碰撞力的强度，范围[0,1], 默认为0.7。设置迭代次数，默认为1，迭代次数越多最终的布局效果越好，但是计算复杂度更高
+          .force("collide", this.$d3.forceCollide(this.collide).strength(0.2).iterations(5))
+          // 在计时器的每一帧中，仿真的alpha系数会不断削减,当alpha到达一个系数时，仿真将会停止，也就是alpha的目标系数alphaTarget，该值区间为[0,1]. 默认为0，
+          // 控制力学模拟衰减率，[0-1] ,设为0则不停止 ， 默认0.0228，直到0.001
+          .alphaDecay(this.alphaDecay)
+          // 监听事件 ，tick|end ，例如监听 tick 滴答事件
+          .on("tick", ()=>this.ticked());
+      this.link = svg.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link");
+      this.node = svg.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node");
         _this.links.push({source: a, target: b}); // Add a-b.
         _this.links.push({source: b, target: c}); // Add b-c.
         _this.links.push({source: c, target: a}); // Add c-a.
@@ -99,18 +110,33 @@ export default {
     addData(){
       var _this = this;
       var data = { id: ('id_'+ Math.random()).replace('0.', '') };
-      _this.nodes.push(data); // Re-add c.
-      _this.links.push({source: this.b, target: data}); 
-debugger
-      let _nodeG = this.nodeG.data(this.nodes);
-      // _nodeG.exit().remove();
-      _nodeG.enter().append("circle").attr("class","nodeCircle")
-            .attr("fill", function(d) { return _this.color(d.id); })
-            .call(function(d) { d.transition().attr("r", 8); }).merge(_nodeG)
+      this.nodes.push(data); // Re-add c.
+      this.links.push({source: this.b, target: data}); 
 
-        this.simulation.nodes(this.nodes);
-        this.simulation.force("link").links(this.links);
-        this.simulation.alpha(1).restart();            
+      
+      this.nodeG= this.nodeG.data(this.nodes);
+      this.nodeG.exit().remove();
+      let _nodeG = this.nodeG.enter().append("g").attr("class","nodeG");
+      this.nodeCircle = _nodeG.append("circle").attr("class","nodeCircle")
+            .attr("fill", function(d) { return _this.color(d.id); })
+            .call(function(d) { d.transition().attr("r", 8); }).merge(this.nodeCircle);
+      let _link= this.link.data(this.links, function(d) { return d.source.id + "-" + d.target.id; });
+
+      // Keep the exiting links connected to the moving remaining nodes.
+      this.link = _link.exit().transition()
+          .attr("stroke-opacity", 0)
+          .attrTween("x1", function(d) { return function() { return d.source.x; }; })
+          .attrTween("x2", function(d) { return function() { return d.target.x; }; })
+          .attrTween("y1", function(d) { return function() { return d.source.y; }; })
+          .attrTween("y2", function(d) { return function() { return d.target.y; }; })
+          .remove();
+
+      this.link = _link.enter().append("line")
+        .call(function(d) { d.transition().attr("stroke-opacity", 1); })
+        .merge(_link);     
+      this.simulation.nodes(this.nodes);
+      this.simulation.force("link").links(this.links);
+      this.simulation.alpha(1).restart()       
     },
     restart(){
         let _this = this;
