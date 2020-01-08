@@ -14,7 +14,7 @@
         <section class="part part2">
           <img class="icon" src="/img/shrink.png" alt="">
           <div class="inputW">
-            <el-input type="text" placeholder="请输入关键字"></el-input>
+            <el-input type="text" v-model="searchVal" @input="searchNode" placeholder="请输入关键字"></el-input>
           </div>
         </section>
         <section class="part part3">
@@ -27,7 +27,6 @@
 <script>
 // @ is an alias to /src
 /* eslint-disable*/ 
-
 export default {
   name: 'relationMap',
   components: {
@@ -40,6 +39,7 @@ export default {
   },
   data(){
     return {
+      searchVal:'',//搜索框的值
       isFullScreen:true,//是否全屏..
       checkList:[],//选中的筛选项.....
       edgesNodes:null,
@@ -461,6 +461,20 @@ export default {
         // 5.修改checkbox的位置
         this.shrinkExtBtn.attr("x", function(d){ return d.x + _this.config.r/2 + this.getBBox().width ; }).attr("y", function(d) { return d.y - this.getBBox().height; })          
     },
+    // 搜索节点.....
+    searchNode(val){
+      let _this = this;
+      if( val == '' ){
+        this.nodeG.transition().style('opacity', 1);
+        return;
+      }
+      this.nodeG.filter(function (d) {
+        return (d.name.indexOf(val) == -1);
+      }).transition().style('opacity', 0.5);
+      this.nodeG.filter(function(d){
+        return (d.name.indexOf(val) != -1);
+      }).transition().style('opacity', 1);
+    },
     dragended(d){
       if (!this.$d3.event.active) this.simulation.alphaTarget(0);
       d.fx = null;
@@ -504,7 +518,7 @@ export default {
       }
       this.init();
     },
-    highlightObject(obj){// 高亮和取消高亮
+    highlightObject(obj=null){// 高亮和取消高亮
         let _this = this;
         if (obj) {
             var objIndex = obj.index;
@@ -539,6 +553,8 @@ export default {
             }).transition().style('opacity', 1);
             this.dependsNode = [],
             this.dependsLinkAndText = [];
+            // 若果搜索框有值则执行搜索....
+            this.searchNode( this.searchVal );
         }
     },
     /**
