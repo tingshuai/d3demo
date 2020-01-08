@@ -3,12 +3,8 @@
     <div class="controlBar">
         <section class="part part1">
           <img class="icon" src="/img/expand.png" alt="">
-          <el-checkbox-group class="popControl" v-model="checkList">
-            <el-checkbox label="复选框 A"></el-checkbox>
-            <el-checkbox label="复选框 B"></el-checkbox>
-            <el-checkbox label="复选框 C"></el-checkbox>
-            <el-checkbox label="禁用" disabled></el-checkbox>
-            <el-checkbox label="选中且禁用" disabled></el-checkbox>
+          <el-checkbox-group @change="selValChange" class="popControl" v-model="checkList">
+            <el-checkbox :checked="true" :label="item" v-for="(item,index) in typeArray" :key="index"></el-checkbox>
           </el-checkbox-group>
         </section>
         <section class="part part2">
@@ -64,6 +60,7 @@ export default {
       dependsNode:[],// 需要高亮的node
       dependsLinkAndText:[],// 需要高亮的link
       R:30,//画线时候的影响弧度
+      typeArray:[],//节点类型....
       config:{
         width: 375, // 总画布svg的宽
         height: 610,
@@ -93,6 +90,12 @@ export default {
         val.expanded = false;//是否展开
         val.active = false;//是否处于焦点
       })
+      // 填充筛选条件
+      graph.links.forEach((val)=>{
+        this.typeArray.push(val.relation);
+      })
+      // 去重......
+      this.typeArray = new Set(this.typeArray);
       this.config.nodes = graph.nodes;
       this.config.links = graph.links;
       this.init(true);
@@ -210,7 +213,7 @@ export default {
       let _edges = this.edgesNodes
         .enter()
         .append("g")
-        .attr("class","edge")
+        .attr("class","edge").attr("id",(d)=>{ return `${_this.cId}linkG${d.target}${d.source}` })
         .on('mouseover', function () {
             _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 4);
         })
@@ -264,7 +267,7 @@ export default {
       this.nodeGNodes = this.$d3.select("g#nodesGwrap").selectAll("g.nodeG").data(this.config.nodes,function(d){ return d.id });
       this.nodeGNodes.exit().remove();
       let _nodeG = this.nodeGNodes
-        .enter().append("g").attr('class',"nodeG")
+        .enter().append("g").attr('class',"nodeG").attr("id",(d)=>{ return `${_this.cId}nodeG${d.id}`})
         .on('mouseover',(d)=>{
           // _this.showTootip(this,d);
         }).on("mouseout",(d)=>{
@@ -460,6 +463,22 @@ export default {
         this.nodeCheckbox.attr("x", function(d){ return d.x - _this.config.r - this.getBBox().width ; }).attr("y", function(d) { return d.y - this.getBBox().height; })       
         // 5.修改checkbox的位置
         this.shrinkExtBtn.attr("x", function(d){ return d.x + _this.config.r/2 + this.getBBox().width ; }).attr("y", function(d) { return d.y - this.getBBox().height; })          
+    },
+    selValChange(val){
+      let _targetArr = [];
+      let _this = this;
+      this.$d3.select("#linksGwrap").selectAll(".edge").each(function (d) {
+        if( val.includes(d.relation) ){
+          _this.$d3.select(this).attr("display","inline");
+          _this.$d3.select(`#${_this.cId}nodeG${d.target.id}`).attr("display","inline");
+        }else{
+          _this.$d3.select(this).attr("display","none");
+          _this.$d3.select(`#${_this.cId}nodeG${d.target.id}`).attr("display","none");
+        }
+      })
+      // this.nodeG.filter(function(d){
+      //   return (d.name.indexOf(val) != -1);
+      // }).transition().style('opacity', 1);
     },
     // 搜索节点.....
     searchNode(val=''){
