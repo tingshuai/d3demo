@@ -462,7 +462,7 @@ export default {
         this.shrinkExtBtn.attr("x", function(d){ return d.x + _this.config.r/2 + this.getBBox().width ; }).attr("y", function(d) { return d.y - this.getBBox().height; })          
     },
     // 搜索节点.....
-    searchNode(val){
+    searchNode(val=''){
       let _this = this;
       if( val == '' ){
         this.nodeG.transition().style('opacity', 1);
@@ -521,6 +521,9 @@ export default {
     highlightObject(obj=null){// 高亮和取消高亮
         let _this = this;
         if (obj) {
+            // 先清空搜索的对象....
+            this.searchNode();
+
             var objIndex = obj.index;
             this.dependsNode = this.dependsNode.concat([objIndex]);
             this.dependsLinkAndText = this.dependsLinkAndText.concat([objIndex]);
