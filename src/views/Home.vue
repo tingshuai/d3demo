@@ -22,58 +22,41 @@ let _extData = {
               "name": "\u674e\u827a\u79d1",
               "avatar": "https://i.linkeddb.com/upload/4a66/509d/39a25ad4a12d1b6486a0ff91.jpg"
           }
-      },
-      {
-          "id": 832,
-          "oid": "5a56e24b93cc2b42a6bf0336",
-          "type": "role",
-          "name": "\u6c88\u592b\u4eba",
-          "avatar": "https://i.linkeddb.com/upload/05db/a955/dda11486be4f1b94717ea8bb.png",
-          "url": "/movie/role/5a56e24b93cc2b42a6bf0336/",
-          "exdata": {
-              "id": 76304,
-              "oid": "59fa729b18521569b6636eb9",
-              "name": "\u5218\u6d01",
-              "avatar": "https://i.linkeddb.com/person2/e8ac/f7a2/cf19348ed16ab3700bee93b9.jpg"
-          }
-      },     
-      {
-          "id": 833,
-          "oid": "5a56e24b93cc2b42a6bf0337",
-          "type": "role",
-          "name": "\u6c88\u8001\u592b\u4eba",
-          "avatar": "https://i.linkeddb.com/upload/742a/72f2/f933743cc2563895cb28a4ba.png",
-          "url": "/movie/role/5a56e24b93cc2b42a6bf0337/",
-          "exdata": {
-              "id": 74843,
-              "oid": "59fa729018521569b66364a3",
-              "name": "\u5510\u7fa4",
-              "avatar": "https://i.linkeddb.com/person2/97c3/9c83/fee3e8039a4c976f192447bf.jpg"
-          }
       }
   ],
   links:[
       {
           "source": 41,
-          "target": 832,
+          "target": 831,
           "relation": "\u517b\u5973",
           "color": "f2826a"
-      },
-      {
-          "source": 41,
-          "target": 833,
-          "relation": "\u4e3b\u4ec6",
-          "color": ""
-      },
-      {
-          "source": 41,
-          "target": 831,
-          "relation": "\u4ec7\u4eba",
-          "color": ""
       }
   ]
 } 
-
+let _extData2 = {
+  nodes:[      {
+          "id": 56,
+          "oid": "5a56e22893cc2b42a6bf002e",
+          "type": "role",
+          "name": "\u5434\u6cfd",
+          "avatar": "https://i.linkeddb.com/upload/image/2017920/165926893902.jpg",
+          "url": "/movie/role/5a56e22893cc2b42a6bf002e/",
+          "exdata": {
+              "id": 156844,
+              "oid": "59fa7af418521569b66b44e1",
+              "name": "\u5f20\u5929\u9633",
+              "avatar": "https://i.linkeddb.com/person2/75f6/f682/2dbdb23443d37793c5b44250.jpg"
+          }
+      }],
+  links:[
+      {
+          "source": 46,
+          "target": 56,
+          "relation": "\u517b\u5973",
+          "color": "f2826a"
+      }   
+  ]
+}
 import hello from '@/components/HelloWorld.vue'
 export default {
   name: 'relationMap',
@@ -87,7 +70,7 @@ export default {
   },
   methods:{
     nodeShrinkExtBtn(d,i){
-      this.$refs.zstp.addAndDeleteNodes(_extData,d,i);
+      this.$refs.zstp.addAndDeleteNodes(i == 0 ?_extData : _extData2,d,i);
     }
   }
 }
