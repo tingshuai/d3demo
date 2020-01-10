@@ -54,7 +54,6 @@ export default {
       links:null,
       nodeCircles:null,
       patterns:null,
-      patternsW:null,
       nodeCheckbox:null,
       shrinkExtBtn:null,
       nodeG:null,
@@ -163,8 +162,9 @@ export default {
       }
 
       // 3.2 添加多个头像图片的 <pattern>
-      let _patternsW = this.defs.selectAll("pattern.patternclass").data(this.config.nodes,function(d){ return d.id });
-      let _patterns = _patternsW.enter()
+      this.patterns = this.defs.selectAll("pattern.patternclass").data(this.config.nodes,function(d){ return d.id });
+      // this.patterns.exit().remove();
+      this.patterns = this.patterns.enter()
           .append("pattern")
           .attr("class", "patternclass")
           .attr("id", function (d, index) {
@@ -179,7 +179,7 @@ export default {
           .attr("height", "1")
 
       // 3.3 向<defs> - <pattern>添加 头像
-      _patterns.append("image")
+      this.patterns.append("image")
           .attr("class", "circle")
           .attr("xlink:href", function (d) {
               return d.avatar || "https://static.linkeddb.com/m/images/none.jpg"; // 修改节点头像
@@ -192,24 +192,23 @@ export default {
           .attr("preserveAspectRatio", "xMidYMin slice");
 
       // 3.4 名字
-      _patterns.append("rect").attr("x", "0").attr("y", 4/3*this.config.r).attr("width", 2*this.config.r).attr("height", 2/3*this.config.r).attr("fill", "black").attr("opacity", "0.5");
-      _patterns.append("text").attr("class", "nodetext")
-          .attr("x", this.config.r).attr("y", (5/3*this.config.r))
+      this.patterns.append("rect").attr("x", "0").attr("y", this.config.r).attr("width", 2*this.config.r).attr("height", this.config.r).attr("fill", "black").attr("opacity", "0.5");
+      this.patterns.append("text").attr("class", "nodetext")
+          .attr("x", this.config.r).attr("y", (5/3.5*this.config.r))
           .attr('text-anchor', 'middle')
           .attr("fill", "#fff")
           .style("font-size", this.config.r/3)
-          .text(function (d) {
-              return `${d.id}${d.name}`;
-          })
-          
+          .text(function (d,i) {
+              return `${i}-${d.id}-${d.name}`;
+          }).merge(this.patterns); 
       // 5.关系图添加线
-        debugger
-
-      let _edgesNodes = this.$d3.select("g#linksGwrap").selectAll("g.edge").data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`});
+      this.edgesNodes = this.$d3.select("g#linksGwrap").selectAll("g.edge").data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`});
+      console.log("this.edgesNodes",this.edgesNodes);
 
       // 5.1  每条线是个容器，有线 和一个装文字的容器
+      console.log("this.edgesNodes",this.edgesNodes);
       
-      let _edges = _edgesNodes
+      let _edges = this.edgesNodes
         .enter()
         .append("g")
         .attr("class","edge").attr("id",(d)=>{ return `${_this.cId}linkG${d.target}${d.source}` })
@@ -227,6 +226,7 @@ export default {
             }
             return str;
         })
+      console.log("this.edges2",_edges);
 
       // 5.2 添加线
       let _links = _edges.append("path").attr("class","links")
@@ -261,8 +261,9 @@ export default {
         .attr("y", 5)
         .attr("text-anchor", "middle")  // <text>文本中轴对齐方式居中  start | middle | end
         .style("font-size",12).text(d=>{return d.relation}); 
-      let _nodeGNodes = this.$d3.select("g#nodesGwrap").selectAll("g.nodeG").data(this.config.nodes,function(d){ return d.id });
-      let _nodeG = _nodeGNodes
+
+      this.nodeGNodes = this.$d3.select("g#nodesGwrap").selectAll("g.nodeG").data(this.config.nodes,function(d){ return d.id });
+      let _nodeG = this.nodeGNodes
         .enter().append("g").attr('class',"nodeG").attr("id",(d)=>{ return `${_this.cId}nodeG${d.id}`})
         .on('mouseover',(d)=>{
           // _this.showTootip(this,d);
@@ -341,12 +342,7 @@ export default {
         this.rect_g = _rect_g;
         this.texts = _texts;
         this.rects = _rects;
-        this.edgesNodes = _edgesNodes;
-
-        this.patterns = _patterns;
-        this.patternsW = _patternsW;
         // 点
-        this.nodeGNodes = _nodeGNodes;
         this.nodeCircles = _nodeCircles;
         this.nodeCheckbox = _nodeCheckbox;
         this.shrinkExtBtn = _shrinkExtBtn;
@@ -354,40 +350,21 @@ export default {
         this.initForce();
       }else{
         if( nodeD&&!nodeD.expanded ){
-          debugger
-          this.patternsW.data(this.config.nodes,function(d){ return d.id }).exit().remove();
-          this.patterns.data(this.config.nodes,function(d){ return d.id }).exit().remove();
+          this.edgesNodes.exit().transition().style("opacity", 0).remove();
+          this.nodeGNodes.exit().remove();
 
-          this.edges.data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`}).exit().transition().style("opacity", 0).remove();
-          this.links.data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`}).exit().transition().style("opacity", 0).remove();
-          this.rect_g.data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`}).exit().transition().style("opacity", 0).remove();
-          this.texts.data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`}).exit().transition().style("opacity", 0).remove();
-          this.rects.data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`}).exit().transition().style("opacity", 0).remove();
-          this.edgesNodes.data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`}).exit().transition().style("opacity", 0).remove();
-
-          this.nodeG.data(this.config.nodes,function(d){ return d.id }).exit().remove();
-          this.nodeCircles.data(this.config.nodes,function(d){ return d.id }).exit().remove();
-          this.nodeCheckbox.data(this.config.nodes,function(d){ return d.id }).exit().remove();
-          this.shrinkExtBtn.data(this.config.nodes,function(d){ return d.id }).exit().remove();
-          this.nodeGNodes.data(this.config.nodes,function(d){ return d.id }).exit().remove();
         }else{
-          this.patterns = _patterns.merge(this.patterns);
-          this.patternsW = _patternsW.merge(this.patternsW);
-  
           this.edges = _edges.merge(this.edges);
           this.links = _links.merge(this.links);
           this.rect_g = _rect_g.merge(this.rect_g);
           this.texts = _texts.merge(this.texts);
           this.rects = _rects.merge(this.rects);
-          this.edgesNodes = _edgesNodes.merge(this.edgesNodes);
   
           this.nodeG = _nodeG.merge(this.nodeG);
           this.nodeCircles = _nodeCircles.merge(this.nodeCircles);
           this.nodeCheckbox = _nodeCheckbox.merge(this.nodeCheckbox);
           this.shrinkExtBtn = _shrinkExtBtn.merge(this.shrinkExtBtn);
-          this.nodeGNodes = _nodeGNodes.merge(this.nodeGNodes);
         }
-
         this.simulation.nodes(this.config.nodes);
         this.simulation.force("link").links(this.config.links);
         this.simulation.alpha(1).restart();        
