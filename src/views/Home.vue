@@ -38,7 +38,7 @@ let _extData2 = {
           "id": 56,
           "oid": "5a56e22893cc2b42a6bf002e",
           "type": "role",
-          "name": "\u5434\u6cfd",
+          "name": "\u5734\u6dfd",
           "avatar": "https://i.linkeddb.com/upload/image/2017920/165926893902.jpg",
           "url": "/movie/role/5a56e22893cc2b42a6bf002e/",
           "exdata": {
@@ -57,6 +57,30 @@ let _extData2 = {
       }   
   ]
 }
+let _extData3 = {
+  nodes:[      {
+          "id": 59,
+          "oid": "5a56e22893cc2b42a6bf002e",
+          "type": "role",
+          "name": "\u5434\u6cfd",
+          "avatar": "https://i.linkeddb.com/upload/image/2017920/165926893902.jpg",
+          "url": "/movie/role/5a56e22893cc2b42a6bf002e/",
+          "exdata": {
+              "id": 156844,
+              "oid": "59fa7af418521569b66b44e1",
+              "name": "\u5f20\u5929\u9633",
+              "avatar": "https://i.linkeddb.com/person2/75f6/f682/2dbdb23443d37793c5b44250.jpg"
+          }
+      }],
+  links:[
+      {
+          "source": 45,
+          "target": 59,
+          "relation": "\u617b\u5983",
+          "color": "f2826a"
+      }   
+  ]
+}
 import hello from '@/components/HelloWorld.vue'
 export default {
   name: 'relationMap',
@@ -70,7 +94,7 @@ export default {
   },
   methods:{
     nodeShrinkExtBtn(d,i){
-      this.$refs.zstp.addAndDeleteNodes(i == 0 ?_extData : _extData2,d,i);
+      this.$refs.zstp.addAndDeleteNodes(i == 0 ?_extData : i == 1 ? _extData3 : _extData2,d,i);
     }
   }
 }

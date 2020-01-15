@@ -61,6 +61,7 @@ export default {
       dependsLinkAndText:[],// 需要高亮的link
       R:30,//画线时候的影响弧度
       typeArray:[],//节点类型....
+      zoom:null,
       config:{
         width: 375, // 总画布svg的宽
         height: 610,
@@ -130,10 +131,17 @@ export default {
             .attr("width", _parentNode.offsetWidth)
             .attr("height", _parentNode.offsetHeight)
             // .transition().duration(750).call(this.$d3.zoom().transform, this.$d3.zoomIdentity);
-            .call( _this.$d3.zoom().scaleExtent(_this.config.scaleExtent).on("zoom", ()=> {
+            .call( _this.zoom = _this.$d3.zoom().scaleExtent(_this.config.scaleExtent).on("zoom", ()=> {
                 if(_this.config.isScale){
-                    _this.relMap_g.attr("transform", _this.$d3.event.transform);
-                }
+
+                  let _transform = _this.$d3.zoomTransform(_this.SVG.node())
+                    _this.relMap_g.attr("transform", _transform);
+          // this.relMap_g.call(this.zoom.transform,this.$d3.zoomIdentity.translateBy(0,0))
+
+                    // _this.$d3.event.target.translateBy(_this.relMap_g,_this.$d3.event.transform.x,_this.$d3.event.transform.y)
+                console.log(_this.$d3.event.translate);
+              }
+                
             })).on("dblclick.zoom", null); 
             
         // 3.defs  <defs>标签的内容不会显示，只有调用的时候才显示
@@ -201,66 +209,6 @@ export default {
           .text(function (d,i) {
               return `${i}-${d.id}-${d.name}`;
           }).merge(this.patterns); 
-      // 5.关系图添加线
-      this.edgesNodes = this.$d3.select("g#linksGwrap").selectAll("g.edge").data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`});
-      console.log("this.edgesNodes",this.edgesNodes);
-
-      // 5.1  每条线是个容器，有线 和一个装文字的容器
-      console.log("this.edgesNodes",this.edgesNodes);
-      
-      let _edges = this.edgesNodes
-        .enter()
-        .append("g")
-        .attr("class","edge").attr("id",(d)=>{ return `${_this.cId}linkG${d.target}${d.source}` })
-        .on('mouseover', function () {
-            _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 4);
-        })
-        .on('mouseout', function () {
-            _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 1);
-        }).on('click',(d)=>{
-
-        }).attr('fill', function (d) {
-            var str = '#bad4ed';
-            if (d.color) {
-                str = "#" + d.color;
-            }
-            return str;
-        })
-      console.log("this.edges2",_edges);
-
-      // 5.2 添加线
-      let _links = _edges.append("path").attr("class","links")
-        .attr("d", d => {
-            return `M${this.config.linkSrc},0L${this.getDis(d.source,d.target)},0`
-        })
-        .style("marker-end", "url(#marker)")
-        // .attr("refX",this.config.r)
-        .attr('stroke', (d)=> {
-            var str=d.color ? "#"+d.color : this.config.linkColor ;
-            return str;
-        });
-
-      // 5.3 添加关系文字的容器
-      let _rect_g = _edges.append("g").attr("class", "rect_g");
-
-      // 5.4 添加rect
-      let _rects = _rect_g.append("rect")
-        .attr("x", 40)
-        .attr("y", -10)
-        .attr("width", 40)
-        .attr("height", 20)
-        .attr("fill", "white")
-        .attr('stroke',  (d)=> {
-            var str=d.color ? "#"+d.color : this.config.linkColor ;
-            return str;
-        })
-
-      // 5.5 文本标签  坐标（x,y）代表 文本的左下角的点
-      let _texts = _rect_g.append("text")
-        .attr("x", 40)
-        .attr("y", 5)
-        .attr("text-anchor", "middle")  // <text>文本中轴对齐方式居中  start | middle | end
-        .style("font-size",12).text(d=>{return d.relation}); 
 
       this.nodeGNodes = this.$d3.select("g#nodesGwrap").selectAll("g.nodeG").data(this.config.nodes,function(d){ return d.id });
       let _nodeG = this.nodeGNodes
@@ -277,6 +225,7 @@ export default {
           .attr("fill", function (d) {
               return ("url(#avatar" + d.id + ")");
           })
+          .attr("id",function(d){ return `nodeCircle${d.id}`})
           .attr("stroke", "#ccf1fc")
           .attr("stroke-width", this.config.strokeWidth)
           .attr("r", this.config.r)
@@ -313,16 +262,16 @@ export default {
               d.fx = null;
               d.fy = null;
           }))
-      // 6.1 关系图添加用于显示checkbox的按钮
-      let _nodeCheckbox = _nodeG.append('image').attr("class","nodeCheckbox")
-          .attr("id", (d)=>{ return `${this.cId}nodeCheckbox${d.id}`})
-          .attr("xlink:href",(d)=>{ return '/img/expand.png' })
-          .style("width",this.config.r * 0.5)
-          .style("height",this.config.r * 0.5)
-          .on("click",function(d,i){
-              _this.setCheckboxStatus(d,i);
-          })
-      // 6.2 关系图添加用于显示扩展收缩的按钮
+      // // 6.1 关系图添加用于显示checkbox的按钮
+      // let _nodeCheckbox = _nodeG.append('image').attr("class","nodeCheckbox")
+      //     .attr("id", (d)=>{ return `${this.cId}nodeCheckbox${d.id}`})
+      //     .attr("xlink:href",(d)=>{ return '/img/expand.png' })
+      //     .style("width",this.config.r * 0.5)
+      //     .style("height",this.config.r * 0.5)
+      //     .on("click",function(d,i){
+      //         _this.setCheckboxStatus(d,i);
+      //     })
+      // // 6.2 关系图添加用于显示扩展收缩的按钮
       let _shrinkExtBtn = _nodeG.append('image').attr("class","nodeShrinkExtBtn")
           .attr("id", (d)=>{ return `${this.cId}nodeShrinkExtBtn${d.id}`})
           .attr("xlink:href",(d)=>{ return '/img/expand.png' })
@@ -335,39 +284,114 @@ export default {
             // 设置节点状态
               _this.setnodeShrinkExtBtnStatus(d,i);
           })
+          
+          
+      // 5.关系图添加线
+      this.edgesNodes = this.$d3.select("g#linksGwrap").selectAll("g.edge").data(this.config.links,function(d){return `${d.source.id}-${d.target.id}`});
+      console.log("this.edgesNodes",this.edgesNodes);
+
+      // 5.1  每条线是个容器，有线 和一个装文字的容器
+      console.log("this.edgesNodes",this.edgesNodes);
+      
+      let _edges = this.edgesNodes
+        .enter()
+        .append("g")
+        .attr("class","edge").attr("id",(d)=>{ return `${_this.cId}linkG${d.target}${d.source}` })
+        .on('mouseover', function () {
+            _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 4);
+        })
+        .on('mouseout', function () {
+            _this.$d3.select(this).selectAll('path.links').attr('stroke-width', 1);
+        }).on('click',(d)=>{
+
+        }).attr('fill', function (d) {
+            var str = '#bad4ed';
+            if (d.color) {
+                str = "#" + d.color;
+            }
+            return str;
+        })
+      console.log("this.edges2",_edges);
+
+      // 5.2 添加线
+      let _links = _edges.append("path").attr("class","links")
+        .attr("id",function(d){ return `linkLine${d.target}${d.source}`})
+        .attr("d", d => {
+            return `M${this.config.linkSrc},0L${this.getDis(d.source,d.target)},0`
+        })
+        .style("marker-end", "url(#marker)")
+        // .attr("refX",this.config.r)
+        .attr('stroke', (d)=> {
+            var str=d.color ? "#"+d.color : this.config.linkColor ;
+            return str;
+        });
+
+      // // 5.3 添加关系文字的容器
+      // let _rect_g = _edges.append("g").attr("class", "rect_g");
+
+      // // 5.4 添加rect
+      // let _rects = _rect_g.append("rect")
+      //   .attr("x", 40)
+      //   .attr("y", -10)
+      //   .attr("width", 40)
+      //   .attr("height", 20)
+      //   .attr("fill", "white")
+      //   .attr('stroke',  (d)=> {
+      //       var str=d.color ? "#"+d.color : this.config.linkColor ;
+      //       return str;
+      //   })
+
+      // 5.5 文本标签  坐标（x,y）代表 文本的左下角的点
+      // let _texts = _rect_g.append("text")
+      //   .attr("x", 40)
+      //   .attr("y", 5)
+      //   .attr("text-anchor", "middle")  // <text>文本中轴对齐方式居中  start | middle | end
+      //   .style("font-size",12).text(d=>{return d.relation}); 
+
       if( first ){
         // 连线
         this.edges = _edges;
-        this.links = _links;
-        this.rect_g = _rect_g;
-        this.texts = _texts;
-        this.rects = _rects;
+        this.links = _links.data(this.config.links,function(d){ return `${d.source.id}-${d.target.id}` });
+        this.links = this.links.merge(this.links.exit());
+        // this.rect_g = _rect_g;
+        // this.texts = _texts;
+        // this.rects = _rects;
         // 点
-        this.nodeCircles = _nodeCircles;
-        this.nodeCheckbox = _nodeCheckbox;
-        this.shrinkExtBtn = _shrinkExtBtn;
+        this.nodeCircles = _nodeCircles.data(this.config.nodes,function(d){ return d.id });
+        this.nodeCircles = this.nodeCircles.merge(this.nodeCircles.exit());        
+
+        this.shrinkExtBtn = _shrinkExtBtn.data(this.config.nodes,function(d){ return d.id });
+        this.shrinkExtBtn = this.shrinkExtBtn.merge(this.shrinkExtBtn.exit());           
+        // this.nodeCheckbox = _nodeCheckbox;
         this.nodeG = _nodeG;
         this.initForce();
       }else{
         if( nodeD&&!nodeD.expanded ){
+          this.links = this.links.data(this.config.links,function(d){ return `${d.source.id}-${d.target.id}` }).merge(this.links);
+          this.nodeCircles = this.nodeCircles.data(this.config.nodes,function(d){ return d.id }).merge(this.nodeCircles);
+          this.shrinkExtBtn = this.shrinkExtBtn.data(this.config.nodes,function(d){ return d.id }).merge(this.shrinkExtBtn);
+
           this.edgesNodes.exit().transition().style("opacity", 0).remove();
           this.nodeGNodes.exit().remove();
 
         }else{
-          this.edges = _edges.merge(this.edges);
+          this.edges = this.edgesNodes.merge(_edges);
           this.links = _links.merge(this.links);
-          this.rect_g = _rect_g.merge(this.rect_g);
-          this.texts = _texts.merge(this.texts);
-          this.rects = _rects.merge(this.rects);
+          // this.rect_g = _rect_g.merge(this.rect_g);
+          // this.texts = _texts.merge(this.texts);
+          // this.rects = _rects.merge(this.rects);
   
-          this.nodeG = _nodeG.merge(this.nodeG);
+          this.nodeG = this.nodeGNodes.merge(_nodeG);
           this.nodeCircles = _nodeCircles.merge(this.nodeCircles);
-          this.nodeCheckbox = _nodeCheckbox.merge(this.nodeCheckbox);
+          // this.nodeCheckbox = _nodeCheckbox.merge(this.nodeCheckbox);
           this.shrinkExtBtn = _shrinkExtBtn.merge(this.shrinkExtBtn);
         }
         this.simulation.nodes(this.config.nodes);
         this.simulation.force("link").links(this.config.links);
         this.simulation.alpha(1).restart();        
+        setTimeout(() => {
+          this.simulation.stop()
+        }, 3000);      
       }
     },
     // 更新checkbox选中状态....
@@ -437,35 +461,36 @@ export default {
         })
     
         // 7.3 修改线中关系文字text的位置 及 文字的反正
-        this.texts.attr("x", function (d) {
-                // 7.3.1 根据字的长度来更新兄弟元素 rect 的宽度
-                var bbox = _this.$d3.select(this).node().getBBox();
-                var width = bbox.width;
-                // 7.3.2 更新 text 的位置
-                return _this.getDis(d.source, d.target) / 2
-            }).attr("transform", function (d) {
-                // 7.3.3 更新文本反正
-                if (d.target.x < d.source.x) {
-                    var x = _this.getDis(d.source, d.target) / 2;
-                    return 'rotate(180 ' + x + ' ' + 0 + ')';
-                } else {
-                    return 'rotate(0)';
-                }
-            });
+        // this.texts.attr("x", function (d) {
+        //         // 7.3.1 根据字的长度来更新兄弟元素 rect 的宽度
+        //         var bbox = _this.$d3.select(this).node().getBBox();
+        //         var width = bbox.width;
+        //         // 7.3.2 更新 text 的位置
+        //         return _this.getDis(d.source, d.target) / 2
+        //     }).attr("transform", function (d) {
+        //         // 7.3.3 更新文本反正
+        //         if (d.target.x < d.source.x) {
+        //             var x = _this.getDis(d.source, d.target) / 2;
+        //             return 'rotate(180 ' + x + ' ' + 0 + ')';
+        //         } else {
+        //             return 'rotate(0)';
+        //         }
+        //     });
 
-        // 7.4 修改线中装文本矩形rect的位置
-        this.rects.attr("x", function(d){
-          return _this.getDis(d.source, d.target) / 2  - _this.$d3.select(this).attr('width')/2
-        })    // x 坐标为两点中心距离减去自身长度一半
+        // // 7.4 修改线中装文本矩形rect的位置
+        // this.rects.attr("x", function(d){
+        //   return _this.getDis(d.source, d.target) / 2  - _this.$d3.select(this).attr('width')/2
+        // })    // x 坐标为两点中心距离减去自身长度一半
 
         // 5.修改节点的位置
         this.nodeCircles.attr("cx", (d) => { return d.x; }).attr("cy", (d) => {
           return d.y; 
         })       
-        // 5.修改checkbox的位置
-        this.nodeCheckbox.attr("x", function(d){ return d.x - _this.config.r - this.getBBox().width ; }).attr("y", function(d) { return d.y - this.getBBox().height; })       
-        // 5.修改checkbox的位置
+        // // 5.修改checkbox的位置
+        // this.nodeCheckbox.attr("x", function(d){ return d.x - _this.config.r - this.getBBox().width ; }).attr("y", function(d) { return d.y - this.getBBox().height; })       
+        // // 5.修改checkbox的位置
         this.shrinkExtBtn.attr("x", function(d){ return d.x + _this.config.r/2 + this.getBBox().width ; }).attr("y", function(d) { return d.y - this.getBBox().height; })          
+
     },
     selValChange(val){
       let _targetArr = [];
@@ -680,19 +705,21 @@ export default {
     },
     // 切换全屏...
     toggleFullScreen(){
+      let _this = this;
       this.isFullScreen = !this.isFullScreen;
       let _parentNode = this.$refs.relationMap;
-      this.$nextTick(()=>{
-          this.SVG.attr("width",_parentNode.offsetWidth).attr("height",_parentNode.offsetHeight)
-          this.$nextTick(()=>{
-          this.relMap_g = this.SVG.append("g")
-                    .attr("id", "relMap_g")
-                    .attr("width", _parentNode.offsetWidth)
-                    .attr("height", _parentNode.offsetHeight);           
-          this.simulation.force("center", this.$d3.forceCenter(_parentNode.offsetWidth, _parentNode.offsetHeight));
+      this.$nextTick(()=>{          
+          this.simulation.force("center", this.$d3.forceCenter(_parentNode.offsetWidth/2, _parentNode.offsetHeight/2));
           this.simulation.alpha(1).restart();
-        },500)
-      })
+          this.relMap_g.attr("transform",`translate(0,0)`)
+          let _transform = this.$d3.zoomTransform(_this.relMap_g.node());
+          _transform = _transform.translate(-_transform.x,-_transform.y)
+          _this.relMap_g.attr("transform", _transform);
+          console.log("3333",_transform);
+          this.$d3.zoom
+          debugger
+          // this.relMap_g.call(this.zoom.transform,_transform)
+        })
     }
   }
 }
